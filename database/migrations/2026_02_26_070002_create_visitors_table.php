@@ -16,9 +16,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('phone')->nullable();
             $table->string('agency')->nullable();
+            $table->text('alamat')->nullable();
             $table->string('purpose');
             $table->text('notes')->nullable();
-            $table->string('photo')->nullable();
+            $table->longText('photo')->nullable();
+            $table->longText('identity_photo')->nullable();
             $table->longText('signature')->nullable();
             $table->decimal('location_lat', 10, 8)->nullable();
             $table->decimal('location_lng', 11, 8)->nullable();
