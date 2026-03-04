@@ -21,17 +21,17 @@ const PublicDisplay = () => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // Function to mute video directly via ref
-  const muteVideo = useCallback(() => {
+  // Function to lower video volume
+  const lowerVideoVolume = useCallback(() => {
     if (videoRef.current) {
-      videoRef.current.muted = true;
+      videoRef.current.volume = 0.1; // Volume 10% saat panggilan
     }
   }, []);
 
-  // Function to unmute video directly via ref
-  const unmuteVideo = useCallback(() => {
+  // Function to restore video volume
+  const restoreVideoVolume = useCallback(() => {
     if (videoRef.current) {
-      videoRef.current.muted = false;
+      videoRef.current.volume = 1.0; // Volume 100% setelah panggilan
     }
   }, []);
   
@@ -71,16 +71,19 @@ const PublicDisplay = () => {
       
       if (data.current && data.current.queue_id !== lastQueueIdRef.current) {
         if (lastQueueIdRef.current !== null && soundEnabledRef.current) {
-          // Mute video langsung via ref sebelum panggilan
-          muteVideo();
+          // Turunkan volume video saat panggilan
+          lowerVideoVolume();
           
-          // Putar suara panggilan
-          speakQueueNumber(data.current.queue_number, data.current.counter_number, data.current.counter_name);
-          
-          // Unmute video setelah 8 detik (durasi panggilan)
-          setTimeout(() => {
-            unmuteVideo();
-          }, 8000);
+          // Putar suara panggilan dengan callback untuk mengembalikan volume
+          speakQueueNumber(
+            data.current.queue_number, 
+            data.current.counter_number, 
+            data.current.counter_name,
+            // Callback setelah panggilan selesai (2x pengulangan)
+            () => {
+              restoreVideoVolume();
+            }
+          );
         }
         lastQueueIdRef.current = data.current.queue_id;
       }
@@ -92,12 +95,12 @@ const PublicDisplay = () => {
     } finally {
       setLoading(false);
     }
-  }, [muteVideo, unmuteVideo]);
+  }, [lowerVideoVolume, restoreVideoVolume]);
 
   useEffect(() => {
     fetchVideo();
     fetchDisplayData();
-    const interval = setInterval(fetchDisplayData, 5000);
+    const interval = setInterval(fetchDisplayData, 3000); // Polling setiap 3 detik untuk responsivitas
     return () => clearInterval(interval);
   }, [fetchDisplayData, fetchVideo]);
 

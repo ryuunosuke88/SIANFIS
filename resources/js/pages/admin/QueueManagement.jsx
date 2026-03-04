@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '@/services/api';
 import { Card, CardContent, Button, Select, Badge } from '@/components/ui';
-import { speakQueueNumber } from '@/lib/utils';
 import { 
   LayoutDashboard, FileText, Settings, LogOut,
   RefreshCw, Loader2, Phone, Building2, User,
@@ -71,11 +70,7 @@ const QueueManagement = () => {
     try {
       const response = await adminApi.callQueue(queueId, selectedCounter);
       if (response.data.success) {
-        const queue = queues.find(q => q.id === queueId);
-        const counter = counters.find(c => c.number === selectedCounter);
-        if (queue) {
-          speakQueueNumber(queue.queue_number, selectedCounter, counter?.name);
-        }
+        // Suara pemanggilan hanya ada di Display, bukan di Admin
         fetchQueues();
       }
     } catch (error) {

@@ -63,7 +63,7 @@ function spellQueueNumber(queueNumber) {
   return queueNumber;
 }
 
-export function speakQueueNumber(queueNumber, counterNumber, counterName = null) {
+export function speakQueueNumber(queueNumber, counterNumber, counterName = null, onEndCallback = null) {
   if ('speechSynthesis' in window) {
     // Cancel any ongoing speech
     window.speechSynthesis.cancel();
@@ -74,12 +74,46 @@ export function speakQueueNumber(queueNumber, counterNumber, counterName = null)
       : `loket ${counterNumber}`;
     
     const text = `Nomor antrian ${spelledNumber}. Silakan menuju ${counterText}`;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'id-ID';
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
     
-    window.speechSynthesis.speak(utterance);
+    let speakCount = 0;
+    const maxSpeakCount = 2; // Ulangi 2 kali
+    
+    const speak = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      utterance.volume = 1.0; // Volume maksimal 100%
+      
+      utterance.onend = () => {
+        speakCount++;
+        if (speakCount < maxSpeakCount) {
+          // Ulangi panggilan setelah jeda singkat
+          setTimeout(speak, 500);
+        } else {
+          // Panggil callback setelah semua pengulangan selesai
+          if (onEndCallback) {
+            onEndCallback();
+          }
+        }
+      };
+      
+      utterance.onerror = () => {
+        // Jika error, tetap panggil callback
+        if (onEndCallback) {
+          onEndCallback();
+        }
+      };
+      
+      window.speechSynthesis.speak(utterance);
+    };
+    
+    speak();
+  } else {
+    // Jika speech synthesis tidak didukung, tetap panggil callback
+    if (onEndCallback) {
+      onEndCallback();
+    }
   }
 }
 
