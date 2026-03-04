@@ -25,7 +25,6 @@ const AdminLogin = () => {
     setLoading(true);
     setError(null);
 
-    // Debug: log form data
     console.log('Login attempt:', { email: formData.email, password: formData.password });
 
     try {
@@ -48,36 +47,39 @@ const AdminLogin = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen bg-background flex items-center justify-center p-4"
-      style={{
-        backgroundImage: 'url(/assets/BG1.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
-      <div className="absolute inset-0 bg-black/70" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background with Mesh Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900" />
+      <div className="absolute inset-0 mesh-gradient opacity-30" />
       
-      <Card className="relative z-10 w-full max-w-md">
-        <CardHeader className="text-center">
+      {/* Decorative Elements */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+      
+      <Card variant="elevated" className="relative z-10 w-full max-w-md animate-scale-in">
+        <CardHeader className="text-center pb-2">
           {/* Logos */}
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-14 object-contain" />
-            <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-14 object-contain" />
+          <div className="flex items-center justify-center gap-6 mb-6">
+            <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-16 object-contain drop-shadow-lg" />
+            <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-16 object-contain drop-shadow-lg" />
           </div>
           
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 mx-auto">
-            <Lock className="w-8 h-8 text-primary" />
+          {/* Icon */}
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary-600 shadow-material-3 mb-6 mx-auto">
+            <Lock className="w-10 h-10 text-white" />
           </div>
-          <CardTitle className="text-2xl">Admin Login</CardTitle>
+          
+          <CardTitle className="text-2xl font-bold">Selamat Datang</CardTitle>
           <p className="text-muted-foreground mt-2">
             Smart Queue System - BPPMHKP Lampung
           </p>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        
+        <CardContent className="pt-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm animate-fade-in flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
                 {error}
               </div>
             )}
@@ -85,7 +87,9 @@ const AdminLogin = () => {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                  <User className="w-5 h-5" />
+                </div>
                 <Input
                   id="email"
                   name="email"
@@ -93,7 +97,7 @@ const AdminLogin = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="admin@example.com"
-                  className="pl-10"
+                  className="pl-12"
                   required
                 />
               </div>
@@ -102,7 +106,9 @@ const AdminLogin = () => {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                  <Lock className="w-5 h-5" />
+                </div>
                 <Input
                   id="password"
                   name="password"
@@ -110,26 +116,27 @@ const AdminLogin = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="••••••••"
-                  className="pl-10"
+                  className="pl-12"
                   required
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" size="lg" className="w-full mt-6" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Masuk...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Memproses...
                 </>
               ) : (
-                'Masuk'
+                'Masuk ke Dashboard'
               )}
             </Button>
 
             <Button 
               type="button" 
-              variant="outline" 
+              variant="ghost" 
+              size="lg"
               className="w-full"
               onClick={() => navigate('/')}
             >

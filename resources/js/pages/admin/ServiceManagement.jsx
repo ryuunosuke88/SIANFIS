@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi } from '@/services/api';
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Badge } from '@/components/ui';
 import { 
   LayoutDashboard, FileText, Settings, LogOut,
   RefreshCw, Loader2, Plus, Pencil, Trash2, X, Check,
-  Building2, Hash, Calendar
+  Building2, Hash, Calendar, Layers, MapPin
 } from 'lucide-react';
 
 const ServiceManagement = () => {
@@ -162,71 +162,80 @@ const ServiceManagement = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border p-4 flex flex-col">
+      <aside className="fixed left-0 top-0 h-full w-72 bg-card border-r border-border flex flex-col shadow-material-2 z-40">
         {/* Logo Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-10 object-contain" />
-            <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-10 object-contain" />
+        <div className="p-6 border-b border-border">
+          <div className="flex items-center justify-center gap-4 mb-3">
+            <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-12 object-contain" />
+            <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-12 object-contain" />
           </div>
-          <h1 className="text-lg font-bold text-center">Smart Queue</h1>
-          <p className="text-xs text-muted-foreground text-center">Admin Panel</p>
+          <div className="text-center">
+            <h1 className="text-lg font-bold text-foreground">Smart Queue</h1>
+            <p className="text-xs text-muted-foreground">Admin Panel</p>
+          </div>
         </div>
 
-        <nav className="space-y-2 flex-1">
+        <nav className="flex-1 p-4 space-y-1">
           <button
             onClick={() => navigate('/admin/dashboard')}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
+            className="material-nav-item w-full"
           >
             <LayoutDashboard className="w-5 h-5" />
             Dashboard
           </button>
           <button
             onClick={() => navigate('/admin/queue')}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
+            className="material-nav-item w-full"
           >
             <FileText className="w-5 h-5" />
             Antrian
           </button>
           <button
             onClick={() => navigate('/admin/history')}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary transition-colors"
+            className="material-nav-item w-full"
           >
             <Calendar className="w-5 h-5" />
             Riwayat
           </button>
           <button
             onClick={() => navigate('/admin/services')}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg bg-primary text-primary-foreground"
+            className="material-nav-item active w-full"
           >
             <Settings className="w-5 h-5" />
             Layanan
           </button>
         </nav>
 
-        <div className="mt-auto">
-          <div className="border-t border-border pt-4 mb-4">
-            <p className="text-sm font-medium">{user?.name}</p>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+        {/* User Profile Section */}
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-600 flex items-center justify-center text-white font-semibold">
+              {user?.name?.charAt(0)?.toUpperCase() || 'A'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{user?.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors"
+            className="mt-3 flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-destructive hover:bg-destructive/10 transition-colors text-sm font-medium"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
             Logout
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="ml-64 p-8">
-        <div className="flex justify-between items-center mb-8">
+      <main className="ml-72 flex-1 p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8 animate-fade-in">
           <div>
-            <h1 className="text-2xl font-bold">Kelola Layanan</h1>
-            <p className="text-muted-foreground">Kelola layanan dan loket</p>
+            <h1 className="text-3xl font-bold text-foreground">Kelola Layanan</h1>
+            <p className="text-muted-foreground mt-1">Kelola layanan dan loket</p>
           </div>
           <Button variant="outline" onClick={fetchData}>
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -235,121 +244,166 @@ const ServiceManagement = () => {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center">
+              <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground">Memuat data...</p>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Services Section */}
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Daftar Layanan</h2>
-                <Button onClick={() => openServiceModal()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Layanan
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                {services.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Belum ada layanan
-                    </CardContent>
-                  </Card>
-                ) : (
-                  services.map((service) => (
-                    <Card key={service.id} className={!service.active ? 'opacity-60' : ''}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                            <span className="font-mono font-bold text-primary">{service.prefix}</span>
+            <div className="animate-slide-up">
+              <Card variant="elevated" className="overflow-hidden">
+                <div className="bg-gradient-to-r from-primary to-primary-600 p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                        <Layers className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white">Daftar Layanan</h2>
+                        <p className="text-white/80 text-sm">{services.length} layanan terdaftar</p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => openServiceModal()}
+                      className="bg-white/20 hover:bg-white/30 text-white border-0"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Tambah
+                    </Button>
+                  </div>
+                </div>
+                
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {services.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Layers className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                        <p>Belum ada layanan</p>
+                      </div>
+                    ) : (
+                      services.map((service, index) => (
+                        <div 
+                          key={service.id} 
+                          className={`flex items-center justify-between p-4 rounded-xl border border-border/50 hover:bg-secondary/30 transition-all group ${!service.active ? 'opacity-50' : ''}`}
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
+                              <span className="font-mono font-bold text-primary text-lg">{service.prefix}</span>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{service.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {service.description || 'Tidak ada deskripsi'}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold">{service.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {service.description || 'Tidak ada deskripsi'}
-                            </p>
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {!service.active && (
+                              <Badge variant="secondary">Nonaktif</Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openServiceModal(service)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteService(service.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openServiceModal(service)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="text-destructive"
-                            onClick={() => handleDeleteService(service.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Counters Section */}
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Daftar Loket</h2>
-                <Button onClick={() => openCounterModal()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Loket
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                {counters.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Belum ada loket
-                    </CardContent>
-                  </Card>
-                ) : (
-                  counters.map((counter) => (
-                    <Card key={counter.id} className={!counter.active ? 'opacity-60' : ''}>
-                      <CardContent className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center">
-                            <span className="font-bold text-lg">{counter.number}</span>
+            <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <Card variant="elevated" className="overflow-hidden">
+                <div className="bg-gradient-to-r from-accent to-teal-500 p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-white">Daftar Loket</h2>
+                        <p className="text-white/80 text-sm">{counters.length} loket terdaftar</p>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={() => openCounterModal()}
+                      className="bg-white/20 hover:bg-white/30 text-white border-0"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Tambah
+                    </Button>
+                  </div>
+                </div>
+                
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {counters.length === 0 ? (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <MapPin className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                        <p>Belum ada loket</p>
+                      </div>
+                    ) : (
+                      counters.map((counter, index) => (
+                        <div 
+                          key={counter.id} 
+                          className={`flex items-center justify-between p-4 rounded-xl border border-border/50 hover:bg-secondary/30 transition-all group ${!counter.active ? 'opacity-50' : ''}`}
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 flex items-center justify-center border border-accent/20">
+                              <span className="font-bold text-accent text-xl">{counter.number}</span>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{counter.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {counter.service?.name || 'Semua Layanan'}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-semibold">{counter.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {counter.service?.name || 'Semua Layanan'}
-                            </p>
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {!counter.active && (
+                              <Badge variant="secondary">Nonaktif</Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openCounterModal(counter)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteCounter(counter.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openCounterModal(counter)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="text-destructive"
-                            onClick={() => handleDeleteCounter(counter.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}
@@ -357,14 +411,19 @@ const ServiceManagement = () => {
 
       {/* Service Modal */}
       {showServiceModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>{editingService ? 'Edit Layanan' : 'Tambah Layanan'}</CardTitle>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <Card variant="elevated" className="w-full max-w-md animate-scale-in">
+            <CardHeader className="border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle>{editingService ? 'Edit Layanan' : 'Tambah Layanan'}</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-5">
               <div className="space-y-2">
-                <Label>Nama Layanan</Label>
+                <Label required>Nama Layanan</Label>
                 <Input
                   value={serviceForm.name}
                   onChange={(e) => setServiceForm({ ...serviceForm, name: e.target.value })}
@@ -372,7 +431,7 @@ const ServiceManagement = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Prefix (Huruf Kode)</Label>
+                <Label required>Prefix (Huruf Kode)</Label>
                 <Input
                   value={serviceForm.prefix}
                   onChange={(e) => setServiceForm({ ...serviceForm, prefix: e.target.value.toUpperCase() })}
@@ -388,15 +447,15 @@ const ServiceManagement = () => {
                   placeholder="Deskripsi layanan (opsional)"
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
                 <input
                   type="checkbox"
                   id="active"
                   checked={serviceForm.active}
                   onChange={(e) => setServiceForm({ ...serviceForm, active: e.target.checked })}
-                  className="rounded"
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                 />
-                <Label htmlFor="active">Aktif</Label>
+                <Label htmlFor="active" className="cursor-pointer">Layanan Aktif</Label>
               </div>
               <div className="flex gap-3 pt-4">
                 <Button variant="outline" className="flex-1" onClick={() => setShowServiceModal(false)}>
@@ -421,14 +480,19 @@ const ServiceManagement = () => {
 
       {/* Counter Modal */}
       {showCounterModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>{editingCounter ? 'Edit Loket' : 'Tambah Loket'}</CardTitle>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <Card variant="elevated" className="w-full max-w-md animate-scale-in">
+            <CardHeader className="border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-accent" />
+                </div>
+                <CardTitle>{editingCounter ? 'Edit Loket' : 'Tambah Loket'}</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-6 space-y-5">
               <div className="space-y-2">
-                <Label>Nama Loket</Label>
+                <Label required>Nama Loket</Label>
                 <Input
                   value={counterForm.name}
                   onChange={(e) => setCounterForm({ ...counterForm, name: e.target.value })}
@@ -436,7 +500,7 @@ const ServiceManagement = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Nomor Loket</Label>
+                <Label required>Nomor Loket</Label>
                 <Input
                   type="number"
                   value={counterForm.number}
@@ -449,7 +513,7 @@ const ServiceManagement = () => {
                 <select
                   value={counterForm.service_id}
                   onChange={(e) => setCounterForm({ ...counterForm, service_id: e.target.value })}
-                  className="w-full bg-secondary border border-border rounded-md px-3 py-2"
+                  className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-4 focus:ring-primary/20 focus:outline-none transition-all"
                 >
                   <option value="">Semua Layanan</option>
                   {services.map(service => (
@@ -459,15 +523,15 @@ const ServiceManagement = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
                 <input
                   type="checkbox"
                   id="counterActive"
                   checked={counterForm.active}
                   onChange={(e) => setCounterForm({ ...counterForm, active: e.target.checked })}
-                  className="rounded"
+                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                 />
-                <Label htmlFor="counterActive">Aktif</Label>
+                <Label htmlFor="counterActive" className="cursor-pointer">Loket Aktif</Label>
               </div>
               <div className="flex gap-3 pt-4">
                 <Button variant="outline" className="flex-1" onClick={() => setShowCounterModal(false)}>

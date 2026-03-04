@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { publicApi } from '@/services/api';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, Label, Select, Textarea } from '@/components/ui';
-import { Camera, MapPin, PenLine, Upload, Loader2, AlertTriangle, CheckCircle, X, Navigation, Building2, Radio, Calendar, Clock, IdCard, Settings } from 'lucide-react';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, Label, Select, Textarea, Badge } from '@/components/ui';
+import { Camera, MapPin, PenLine, Upload, Loader2, AlertTriangle, CheckCircle, X, Navigation, Building2, Radio, Calendar, Clock, IdCard, Settings, User, FileText, Phone } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -518,41 +518,39 @@ const PublicForm = () => {
 
     if (!hasAllPermissions || isWithinZone === false) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4"
-          style={{
-            backgroundImage: 'url(/assets/BG1.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          <div className="absolute inset-0 bg-black/70" />
-          <Card className="relative z-10 max-w-lg w-full">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-16 object-contain" />
-                <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-16 object-contain" />
+        <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 flex items-center justify-center p-4 relative overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0 mesh-gradient opacity-30" />
+          <div className="absolute top-0 left-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+          
+          <Card variant="elevated" className="relative z-10 max-w-lg w-full animate-scale-in">
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-16 object-contain drop-shadow-lg" />
+                <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-16 object-contain drop-shadow-lg" />
               </div>
 
-              <h2 className="text-xl font-bold text-center mb-4">Izin Akses Diperlukan</h2>
+              <h2 className="text-2xl font-bold text-center mb-6">Izin Akses Diperlukan</h2>
               
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                  <span className="flex items-center gap-2">
-                    <Camera className="w-5 h-5" />
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                  <span className="flex items-center gap-3 font-medium">
+                    <Camera className="w-5 h-5 text-primary" />
                     Kamera
                   </span>
                   {permissions.camera === null ? (
                     <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   ) : permissions.camera ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <Badge variant="success">Aktif</Badge>
                   ) : (
-                    <X className="w-5 h-5 text-destructive" />
+                    <Badge variant="error">Ditolak</Badge>
                   )}
                 </div>
                 
-                <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                  <span className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
+                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                  <span className="flex items-center gap-3 font-medium">
+                    <MapPin className="w-5 h-5 text-primary" />
                     Lokasi
                   </span>
                   {permissions.location === null ? (
@@ -560,20 +558,20 @@ const PublicForm = () => {
                   ) : permissions.location ? (
                     <div className="flex items-center gap-2">
                       {isTracking && <Radio className="w-4 h-4 text-green-500 animate-pulse" />}
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <Badge variant="success">Aktif</Badge>
                     </div>
                   ) : (
-                    <X className="w-5 h-5 text-destructive" />
+                    <Badge variant="error">Ditolak</Badge>
                   )}
                 </div>
 
                 {distance !== null && (
-                  <div className={`flex items-center justify-between p-3 rounded-lg ${isWithinZone ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                    <span className="flex items-center gap-2">
-                      <AlertTriangle className={`w-5 h-5 ${isWithinZone ? 'text-green-500' : 'text-red-500'}`} />
+                  <div className={`flex items-center justify-between p-4 rounded-xl ${isWithinZone ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                    <span className="flex items-center gap-3 font-medium">
+                      <Navigation className={`w-5 h-5 ${isWithinZone ? 'text-green-500' : 'text-red-500'}`} />
                       Jarak dari kantor
                     </span>
-                    <span className={`font-semibold ${isWithinZone ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={`font-bold ${isWithinZone ? 'text-green-500' : 'text-red-500'}`}>
                       {formatDistance(distance)}
                     </span>
                   </div>
@@ -581,20 +579,20 @@ const PublicForm = () => {
               </div>
 
               {!permissions.camera && (
-                <div className="bg-destructive/20 text-destructive p-3 rounded-lg mb-3 text-sm">
+                <div className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-xl mb-4 text-sm">
                   Izin kamera ditolak. Silakan izinkan akses kamera di browser Anda.
                 </div>
               )}
               
               {!permissions.location && (
-                <div className="bg-destructive/20 text-destructive p-3 rounded-lg mb-3 text-sm">
+                <div className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-xl mb-4 text-sm">
                   {locationError || 'Izin lokasi ditolak. Silakan izinkan akses lokasi di browser Anda.'}
                 </div>
               )}
 
               {permissions.location && isWithinZone === false && (
-                <div className="bg-destructive/20 text-destructive p-3 rounded-lg mb-4 text-sm">
-                  <p className="font-semibold">Di luar zona akses!</p>
+                <div className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-xl mb-6 text-sm">
+                  <p className="font-semibold mb-2">Di luar zona akses!</p>
                   <p>Anda berada <strong>{formatDistance(distance)}</strong> dari kantor.</p>
                   <p>Maksimal <strong>{formatDistance(MAX_DISTANCE)}</strong>.</p>
                   <p className="mt-2">Silakan mendekati lokasi kantor untuk mengakses form.</p>
@@ -602,9 +600,9 @@ const PublicForm = () => {
               )}
 
               {permissions.location && location && (
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium">Peta Lokasi (Real-time):</p>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-semibold">Peta Lokasi (Real-time):</p>
                     {isTracking && (
                       <span className="flex items-center gap-1 text-xs text-green-500">
                         <Radio className="w-3 h-3 animate-pulse" />
@@ -612,7 +610,7 @@ const PublicForm = () => {
                       </span>
                     )}
                   </div>
-                  <div className="rounded-lg overflow-hidden border border-border" style={{ height: '300px' }}>
+                  <div className="rounded-2xl overflow-hidden border border-border shadow-material-2" style={{ height: '300px' }}>
                     <MapContainer
                       center={[OFFICE_LAT, OFFICE_LNG]}
                       zoom={13}
@@ -657,17 +655,17 @@ const PublicForm = () => {
                     </MapContainer>
                   </div>
                   {locationAccuracy && (
-                    <p className="text-xs text-muted-foreground mt-1 text-center">
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
                       Akurasi GPS: ±{Math.round(locationAccuracy)}m
                       {locationAccuracy > 100 && (
-                        <span className="text-yellow-500 ml-2">(Akurasi rendah)</span>
+                        <span className="text-amber-500 ml-2">(Akurasi rendah)</span>
                       )}
                     </p>
                   )}
                 </div>
               )}
 
-              <Button onClick={requestPermissions} className="w-full">
+              <Button onClick={requestPermissions} size="lg" className="w-full">
                 Coba Lagi
               </Button>
               
@@ -684,22 +682,18 @@ const PublicForm = () => {
   }
 
   return (
-    <div 
-      className="min-h-screen bg-background p-4 md:p-8"
-      style={{
-        backgroundImage: 'url(/assets/BG1.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
-      <div className="absolute inset-0 bg-black/60" />
+    <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 p-4 md:p-8 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 mesh-gradient opacity-30" />
+      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-accent/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
       
-      <div className="relative z-10 max-w-lg mx-auto">
+      <div className="relative z-10 max-w-2xl mx-auto">
         {/* Admin Login Button - Top Right */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-6 print-hidden">
           <button
             onClick={() => navigate('/admin/login')}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm backdrop-blur-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-sm backdrop-blur-sm border border-white/10"
           >
             <Settings className="w-4 h-4" />
             Admin
@@ -707,50 +701,52 @@ const PublicForm = () => {
         </div>
 
         {/* Header with Logos */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-16 md:h-20 object-contain" />
-            <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-16 md:h-20 object-contain" />
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="flex items-center justify-center gap-6 mb-6">
+            <img src="/assets/logo1-kkp.png.png" alt="KKP" className="h-20 md:h-24 object-contain drop-shadow-lg" />
+            <img src="/assets/logo2-bppmhkp.png" alt="BPPMHKP" className="h-20 md:h-24 object-contain drop-shadow-lg" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Smart Queue System</h1>
-          <p className="text-gray-300 mt-2">Buku Tamu Digital BPPMHKP Lampung</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white">Smart Queue System</h1>
+          <p className="text-white/60 mt-2 text-lg">Buku Tamu Digital BPPMHKP Lampung</p>
         </div>
 
         {/* Zone Status */}
         {distance !== null && (
-          <div className={`mb-4 p-3 rounded-lg flex items-center justify-between ${isWithinZone ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
-            <div className="flex items-center gap-2">
+          <div className={`mb-6 p-4 rounded-2xl flex items-center justify-between animate-slide-up ${isWithinZone ? 'bg-green-500/20 border border-green-500/40' : 'bg-red-500/20 border border-red-500/40'}`}>
+            <div className="flex items-center gap-3">
               {isWithinZone ? (
                 <>
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-green-400">Di dalam zona akses</span>
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                  <span className="text-green-400 font-semibold">Di dalam zona akses</span>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
-                  <span className="text-red-400">Di luar zona akses</span>
+                  <AlertTriangle className="w-6 h-6 text-red-400" />
+                  <span className="text-red-400 font-semibold">Di luar zona akses</span>
                 </>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {isTracking && <Radio className="w-4 h-4 text-green-500 animate-pulse" />}
-              <span className={`font-semibold ${isWithinZone ? 'text-green-500' : 'text-red-500'}`}>
+            <div className="flex items-center gap-3">
+              {isTracking && <Radio className="w-4 h-4 text-green-400 animate-pulse" />}
+              <span className={`font-bold text-lg ${isWithinZone ? 'text-green-400' : 'text-red-400'}`}>
                 {formatDistance(distance)}
               </span>
             </div>
           </div>
         )}
 
-        {/* Interactive Map in Form */}
+        {/* Interactive Map */}
         {location && (
-          <Card className="mb-4">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+          <Card variant="elevated" className="mb-6 animate-slide-up">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-primary" />
+                  </div>
                   Peta Lokasi (Real-time)
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   {isTracking && (
                     <span className="flex items-center gap-1 text-xs text-green-500">
                       <Radio className="w-3 h-3 animate-pulse" />
@@ -759,12 +755,12 @@ const PublicForm = () => {
                   )}
                   {locationAccuracy && (
                     <span className="text-xs text-muted-foreground">
-                      Akurasi: ±{Math.round(locationAccuracy)}m
+                      ±{Math.round(locationAccuracy)}m
                     </span>
                   )}
                 </div>
               </div>
-              <div className="rounded-lg overflow-hidden border border-border" style={{ height: '250px' }}>
+              <div className="rounded-2xl overflow-hidden border border-border shadow-material-1" style={{ height: '250px' }}>
                 <MapContainer
                   center={[OFFICE_LAT, OFFICE_LNG]}
                   zoom={13}
@@ -806,18 +802,8 @@ const PublicForm = () => {
                   />
                 </MapContainer>
               </div>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png" alt="Office" className="h-5" />
-                  <span>Kantor BPPMHKP</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png" alt="User" className="h-5" />
-                  <span>Lokasi Anda</span>
-                </div>
-              </div>
               {locationAccuracy > 100 && (
-                <div className="mt-2 p-2 bg-yellow-500/20 rounded text-xs text-yellow-600 text-center">
+                <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-600 text-center">
                   ⚠️ Akurasi GPS rendah ({Math.round(locationAccuracy)}m). Untuk akurasi lebih baik, pastikan GPS aktif dan Anda berada di area terbuka.
                 </div>
               )}
@@ -826,15 +812,15 @@ const PublicForm = () => {
         )}
 
         {/* Form Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Pendaftaran Pengunjung</CardTitle>
+        <Card variant="elevated" className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <CardHeader className="border-b border-border">
+            <CardTitle className="text-xl">Form Pendaftaran Pengunjung</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {/* Section: OTOMATIS / SISTEM */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <div className="space-y-5">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-border">
                   <Radio className="w-4 h-4" />
                   Otomatis / Sistem
                 </h3>
@@ -842,10 +828,12 @@ const PublicForm = () => {
                 {/* Koordinat Lokasi */}
                 <div className="space-y-2">
                   <Label>Koordinat Lokasi Anda</Label>
-                  <div className="bg-secondary rounded-lg p-3">
+                  <div className="bg-secondary/50 rounded-xl p-4 border border-border/50">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-primary" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-primary" />
+                        </div>
                         {location ? (
                           <span className="text-sm font-mono">
                             {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
@@ -867,9 +855,11 @@ const PublicForm = () => {
                 {/* Tanggal Kunjungan */}
                 <div className="space-y-2">
                   <Label>Tanggal Kunjungan</Label>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
+                  <div className="bg-secondary/50 rounded-xl p-4 border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-primary" />
+                      </div>
                       <span className="text-sm font-mono">{formatDate(currentDateTime)}</span>
                     </div>
                   </div>
@@ -878,43 +868,46 @@ const PublicForm = () => {
                 {/* Jam Kunjungan */}
                 <div className="space-y-2">
                   <Label>Jam Kunjungan</Label>
-                  <div className="bg-secondary rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-mono">{formatTime(currentDateTime)}</span>
+                  <div className="bg-secondary/50 rounded-xl p-4 border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm font-mono font-semibold">{formatTime(currentDateTime)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-border" />
-
               {/* Section: INPUT MANUAL */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <div className="space-y-5">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-border">
                   <PenLine className="w-4 h-4" />
                   Input Manual
                 </h3>
 
                 {/* Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nama Lengkap ⭐</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Masukkan nama lengkap"
-                    className={errors.name ? 'border-destructive' : ''}
-                  />
+                  <Label required>Nama Lengkap</Label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <Input
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Masukkan nama lengkap"
+                      className={errors.name ? 'border-destructive pl-12' : 'pl-12'}
+                    />
+                  </div>
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
 
                 {/* Alamat */}
                 <div className="space-y-2">
-                  <Label htmlFor="alamat">Alamat</Label>
+                  <Label>Alamat</Label>
                   <Textarea
-                    id="alamat"
                     name="alamat"
                     value={formData.alamat}
                     onChange={handleInputChange}
@@ -925,35 +918,43 @@ const PublicForm = () => {
 
                 {/* Agency */}
                 <div className="space-y-2">
-                  <Label htmlFor="agency">Instansi / Perusahaan ⭐</Label>
-                  <Input
-                    id="agency"
-                    name="agency"
-                    value={formData.agency}
-                    onChange={handleInputChange}
-                    placeholder="Nama instansi atau perusahaan"
-                    className={errors.agency ? 'border-destructive' : ''}
-                  />
+                  <Label required>Instansi / Perusahaan</Label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <Input
+                      name="agency"
+                      value={formData.agency}
+                      onChange={handleInputChange}
+                      placeholder="Nama instansi atau perusahaan"
+                      className={errors.agency ? 'border-destructive pl-12' : 'pl-12'}
+                    />
+                  </div>
                   {errors.agency && <p className="text-sm text-destructive">{errors.agency}</p>}
                 </div>
 
                 {/* Phone */}
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Nomor HP / WhatsApp</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="08xxxxxxxxxx"
-                  />
+                  <Label>Nomor HP / WhatsApp</Label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <Input
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      placeholder="08xxxxxxxxxx"
+                      className="pl-12"
+                    />
+                  </div>
                 </div>
 
                 {/* Service */}
                 <div className="space-y-2">
-                  <Label htmlFor="service_id">Tujuan Layanan ⭐</Label>
+                  <Label required>Tujuan Layanan</Label>
                   <Select
-                    id="service_id"
                     name="service_id"
                     value={formData.service_id}
                     onChange={handleInputChange}
@@ -972,9 +973,8 @@ const PublicForm = () => {
 
                 {/* Purpose */}
                 <div className="space-y-2">
-                  <Label htmlFor="purpose">Keperluan ⭐</Label>
+                  <Label required>Keperluan</Label>
                   <Textarea
-                    id="purpose"
                     name="purpose"
                     value={formData.purpose}
                     onChange={handleInputChange}
@@ -985,11 +985,9 @@ const PublicForm = () => {
                 </div>
               </div>
 
-              <div className="border-t border-border" />
-
               {/* Section: UPLOAD / MEDIA */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <div className="space-y-5">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-border">
                   <Camera className="w-4 h-4" />
                   Upload / Media
                 </h3>
@@ -997,18 +995,18 @@ const PublicForm = () => {
                 {/* Photo Selfie Section */}
                 <div className="space-y-2">
                   <Label>Foto Selfie</Label>
-                  <div className="border border-border rounded-lg p-4">
+                  <div className="border-2 border-dashed border-border rounded-xl p-6 bg-secondary/20">
                     {photoCaptured ? (
                       <div className="text-center">
-                        <img src={photoCaptured} alt="Captured" className="w-48 h-48 object-cover rounded-lg mx-auto mb-4" />
+                        <img src={photoCaptured} alt="Captured" className="w-48 h-48 object-cover rounded-xl mx-auto mb-4 shadow-material-2" />
                         <Button type="button" variant="outline" onClick={() => setPhotoCaptured(null)}>
                           Ambil Ulang
                         </Button>
                       </div>
                     ) : cameraActive ? (
                       <div className="text-center">
-                        <video ref={videoRef} autoPlay playsInline className="w-48 h-48 object-cover rounded-lg mx-auto mb-4" />
-                        <div className="flex gap-2 justify-center">
+                        <video ref={videoRef} autoPlay playsInline className="w-64 h-48 object-cover rounded-xl mx-auto mb-4 shadow-material-2" />
+                        <div className="flex gap-3 justify-center">
                           <Button type="button" onClick={capturePhoto}>
                             <Camera className="w-4 h-4 mr-2" />
                             Ambil Foto
@@ -1019,7 +1017,7 @@ const PublicForm = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <Button type="button" variant="outline" className="flex-1" onClick={startCamera}>
                           <Camera className="w-4 h-4 mr-2" />
                           Buka Kamera
@@ -1043,11 +1041,11 @@ const PublicForm = () => {
                 {/* Identity Photo Section */}
                 <div className="space-y-2">
                   <Label>Foto Tanda Pengenal</Label>
-                  <p className="text-xs text-muted-foreground">Upload foto KTP/SIM/identitas lainnya (jika diperlukan)</p>
-                  <div className="border border-border rounded-lg p-4">
+                  <p className="text-xs text-muted-foreground -mt-1">Upload foto KTP/SIM/identitas lainnya (jika diperlukan)</p>
+                  <div className="border-2 border-dashed border-border rounded-xl p-6 bg-secondary/20">
                     {identityPhoto ? (
                       <div className="text-center">
-                        <img src={identityPhoto} alt="Identity" className="w-48 h-32 object-cover rounded-lg mx-auto mb-4" />
+                        <img src={identityPhoto} alt="Identity" className="w-48 h-32 object-cover rounded-xl mx-auto mb-4 shadow-material-2" />
                         <Button type="button" variant="outline" onClick={() => setIdentityPhoto(null)}>
                           Ganti Foto
                         </Button>
@@ -1069,25 +1067,23 @@ const PublicForm = () => {
                 </div>
               </div>
 
-              <div className="border-t border-border" />
-
               {/* Section: TANDA TANGAN */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <div className="space-y-5">
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-border">
                   <PenLine className="w-4 h-4" />
                   Tanda Tangan Digital
                 </h3>
 
                 <div className="space-y-2">
                   <Label>Tanda Tangan Digital</Label>
-                  <div className="border border-border rounded-lg p-4">
+                  <div className="border-2 border-border rounded-xl p-4 bg-secondary/20">
                     <canvas
                       ref={signatureRef}
                       width={400}
                       height={150}
-                      className="w-full bg-secondary rounded-lg touch-none cursor-crosshair"
+                      className="w-full bg-secondary rounded-xl touch-none cursor-crosshair border border-border/50"
                     />
-                    <Button type="button" variant="outline" size="sm" className="mt-2" onClick={clearSignature}>
+                    <Button type="button" variant="outline" size="sm" className="mt-3" onClick={clearSignature}>
                       <PenLine className="w-4 h-4 mr-2" />
                       Hapus Tanda Tangan
                     </Button>
@@ -1095,23 +1091,16 @@ const PublicForm = () => {
                 </div>
               </div>
 
-              <div className="border-t border-border" />
-
-              {/* Info */}
-              <p className="text-xs text-muted-foreground text-center">
-                ⭐ = Wajib Diisi
-              </p>
-
               {/* Submit Button */}
               <Button 
                 type="submit" 
                 size="xl" 
-                className="w-full" 
+                className="w-full bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-material-3" 
                 disabled={loading || !isWithinZone}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     Memproses...
                   </>
                 ) : !isWithinZone ? (
