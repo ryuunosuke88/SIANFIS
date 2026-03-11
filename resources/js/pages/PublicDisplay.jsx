@@ -14,12 +14,25 @@ const PublicDisplay = () => {
   const [videoUrl, setVideoUrl] = useState(null);
   
   const lastQueueIdRef = useRef(null);
+  const lastCalledAtRef = useRef(null);
   const soundEnabledRef = useRef(soundEnabled);
   const videoRef = useRef(null);
+  const audioInitializedRef = useRef(false);
   
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
+
+  // Initialize audio on first user interaction (for browser autoplay policy)
+  const initializeAudio = useCallback(() => {
+    if (!audioInitializedRef.current && 'speechSynthesis' in window) {
+      // Trigger a silent utterance to initialize the speech synthesis engine
+      const utterance = new SpeechSynthesisUtterance('');
+      utterance.volume = 0;
+      window.speechSynthesis.speak(utterance);
+      audioInitializedRef.current = true;
+    }
+  }, []);
 
   // Function to lower video volume
   const lowerVideoVolume = useCallback(() => {
@@ -51,6 +64,27 @@ const PublicDisplay = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Initialize audio on first user interaction (required by browsers)
+  useEffect(() => {
+    const initOnInteraction = () => {
+      initializeAudio();
+      // Remove listeners after first interaction
+      document.removeEventListener('click', initOnInteraction);
+      document.removeEventListener('touchstart', initOnInteraction);
+      document.removeEventListener('keydown', initOnInteraction);
+    };
+    
+    document.addEventListener('click', initOnInteraction);
+    document.addEventListener('touchstart', initOnInteraction);
+    document.addEventListener('keydown', initOnInteraction);
+    
+    return () => {
+      document.removeEventListener('click', initOnInteraction);
+      document.removeEventListener('touchstart', initOnInteraction);
+      document.removeEventListener('keydown', initOnInteraction);
+    };
+  }, [initializeAudio]);
+
   // Fetch video
   const fetchVideo = useCallback(async () => {
     try {
@@ -69,10 +103,21 @@ const PublicDisplay = () => {
       const response = await publicApi.getDisplayData();
       const data = response.data.data;
       
-      if (data.current && data.current.queue_id !== lastQueueIdRef.current) {
-        if (lastQueueIdRef.current !== null && soundEnabledRef.current) {
+      // Check if there's a new call or recall
+      if (data.current) {
+        const isNewQueue = data.current.queue_id !== lastQueueIdRef.current;
+        const isRecall = data.current.called_at_timestamp && 
+                         data.current.called_at_timestamp !== lastCalledAtRef.current;
+        
+        // Play sound if: new queue OR recall (same queue but new called_at)
+        if ((isNewQueue || isRecall) && soundEnabledRef.current) {
+          // Initialize audio on first call (browser autoplay policy)
+          initializeAudio();
+          
           // Turunkan volume video saat panggilan
           lowerVideoVolume();
+          
+          console.log('Playing sound for queue:', data.current.queue_number, 'Counter:', data.current.counter_number);
           
           // Putar suara panggilan dengan callback untuk mengembalikan volume
           speakQueueNumber(
@@ -84,8 +129,10 @@ const PublicDisplay = () => {
               restoreVideoVolume();
             }
           );
+          
+          lastQueueIdRef.current = data.current.queue_id;
+          lastCalledAtRef.current = data.current.called_at_timestamp;
         }
-        lastQueueIdRef.current = data.current.queue_id;
       }
       
       setDisplayData(data);
@@ -95,7 +142,7 @@ const PublicDisplay = () => {
     } finally {
       setLoading(false);
     }
-  }, [lowerVideoVolume, restoreVideoVolume]);
+  }, [lowerVideoVolume, restoreVideoVolume, initializeAudio]);
 
   useEffect(() => {
     fetchVideo();
