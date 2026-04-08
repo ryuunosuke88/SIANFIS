@@ -171,7 +171,8 @@ const PublicForm = () => {
     office_latitude: -5.411118,
     office_longitude: 105.294829,
     max_distance: 10000,
-    office_name: 'Kantor BPPMHKP'
+    office_name: 'Kantor BPPMHKP',
+    location_required: '1'
   });
   const [locationSettingsLoading, setLocationSettingsLoading] = useState(true);
 
@@ -182,6 +183,9 @@ const PublicForm = () => {
     logo_left: '/assets/LOGO_UMA.png',
     logo_right: '/assets/unggul.png'
   });
+
+  // Dynamic background image from admin
+  const [backgroundImage, setBackgroundImage] = useState(null);
 
   const [permissions, setPermissions] = useState({
     location: null
@@ -212,7 +216,8 @@ const PublicForm = () => {
             office_latitude: parseFloat(settings.office_latitude),
             office_longitude: parseFloat(settings.office_longitude),
             max_distance: parseInt(settings.max_distance),
-            office_name: settings.office_name
+            office_name: settings.office_name,
+            location_required: settings.location_required ?? '1',
           });
         }
       } catch (error) {
@@ -233,8 +238,20 @@ const PublicForm = () => {
       }
     };
 
+    const fetchBackground = async () => {
+      try {
+        const response = await publicApi.getDisplayBackground();
+        if (response.data.success && response.data.data.url) {
+          setBackgroundImage(response.data.data.url);
+        }
+      } catch (err) {
+        // background is optional — fail silently
+      }
+    };
+
     fetchLocationSettings();
     fetchAppSettings();
+    fetchBackground();
   }, []);
 
   // Update current time every second
@@ -312,15 +329,25 @@ const PublicForm = () => {
     setIsTracking(false);
   }, []);
 
+  // Derived: whether location verification is enforced by admin setting
+  const locationRequired = locationSettings.location_required !== '0';
+
   useEffect(() => {
     if (!locationSettingsLoading) {
-      requestPermissions();
+      if (locationRequired) {
+        requestPermissions();
+      } else {
+        // Location not required — bypass geo entirely, allow the form
+        setPermissionChecking(false);
+        setShowPermissionOverlay(false);
+        setIsWithinZone(true);
+      }
     }
 
     return () => {
       stopLocationWatch();
     };
-  }, [locationSettingsLoading]);
+  }, [locationSettingsLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const requestPermissions = async () => {
     setPermissionChecking(true);
@@ -329,7 +356,10 @@ const PublicForm = () => {
   };
 
   useEffect(() => {
-    if (!permissionChecking && permissions.location && isWithinZone) {
+    const canFetch = !permissionChecking && (
+      !locationRequired || (permissions.location && isWithinZone)
+    );
+    if (canFetch) {
       const fetchServices = async () => {
         try {
           const response = await publicApi.getServices();
@@ -342,7 +372,7 @@ const PublicForm = () => {
       };
       fetchServices();
     }
-  }, [permissionChecking, permissions.location, isWithinZone]);
+  }, [permissionChecking, permissions.location, isWithinZone]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleProblemImageUpload = (e) => {
     const file = e.target.files[0];
@@ -380,7 +410,7 @@ const PublicForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isWithinZone) {
+    if (locationRequired && !isWithinZone) {
       alert('Anda di luar zona akses. Form tidak dapat dikirim.');
       return;
     }
@@ -415,8 +445,8 @@ const PublicForm = () => {
     }
   };
 
-  // Permission denied overlay
-  if (!permissionChecking && showPermissionOverlay) {
+  // Permission denied overlay (only when location is required by admin)
+  if (locationRequired && !permissionChecking && showPermissionOverlay) {
     const hasAllPermissions = permissions.location;
     const canProceed = hasAllPermissions && isWithinZone !== false;
 
@@ -577,19 +607,43 @@ const PublicForm = () => {
 
   return (
     <>
-      {/* FISIPOL Branded Background */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.13) 100%)'
-        }}
-      />
-
-      <div className="fixed inset-0 z-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, #FF00BB 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+      {/* ── Dynamic fullscreen background ── */}
+      {backgroundImage ? (
+        <>
+          {/* Photo layer */}
+          <div
+            className="fixed inset-0 z-0"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          {/* Overlay to keep form readable over photo */}
+          <div
+            className="fixed inset-0 z-0"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.87) 0%, rgba(255,0,187,0.28) 100%)',
+            }}
+          />
+        </>
+      ) : (
+        <>
+          {/* Default gradient when no photo is set */}
+          <div
+            className="fixed inset-0 z-0"
+            style={{ background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.13) 100%)' }}
+          />
+          <div
+            className="fixed inset-0 z-0 opacity-5"
+            style={{ backgroundImage: 'radial-gradient(circle, #FF00BB 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+          />
+        </>
+      )}
 
       {/* Main Content */}
       <div className="min-h-screen p-4 md:p-8 relative overflow-hidden">
-        <div className="relative z-10 max-w-3xl mx-auto">
+        <div className="relative z-10 max-w-2xl mx-auto">
           {/* Admin Button - Top Right */}
           <div className="flex justify-end items-center mb-6 print-hidden">
             <button
@@ -603,16 +657,45 @@ const PublicForm = () => {
 
           {/* Header with Logos */}
           <div className="text-center mb-10 animate-fade-in">
-            <div className="flex items-center justify-center gap-8 mb-6">
-              <img src={appSettings.logo_left} alt="Logo Kiri" className="h-24 md:h-28 object-contain drop-shadow-lg" />
-              <img src={appSettings.logo_right} alt="Logo Kanan" className="h-24 md:h-28 object-contain drop-shadow-lg" />
+            <div
+              className="inline-flex items-center justify-center gap-6 mb-6 px-8 py-4 rounded-2xl shadow-lg"
+              style={{
+                background: 'rgba(255,255,255,0.88)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.6)',
+              }}
+            >
+              <img src={appSettings.logo_left} alt="Logo Kiri" className="h-16 md:h-20 object-contain drop-shadow" />
+              <div className="w-px h-12 bg-gray-200" />
+              <img src={appSettings.logo_right} alt="Logo Kanan" className="h-16 md:h-20 object-contain drop-shadow" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-2">{appSettings.app_title}</h1>
-            <p className="text-xl text-gray-600">{appSettings.app_subtitle}</p>
+            <h1
+              className="text-3xl md:text-4xl font-black mb-2 leading-tight"
+              style={{
+                color: '#1a1a2e',
+                textShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              }}
+            >
+              {appSettings.app_title}
+            </h1>
+            <p className="text-lg text-gray-600 mb-4 font-medium">{appSettings.app_subtitle}</p>
+            {/* Location status indicator */}
+            {locationRequired ? (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700 border border-green-200">
+                <Radio className="w-3.5 h-3.5 animate-pulse" />
+                Verifikasi Lokasi Aktif
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                <MapPin className="w-3.5 h-3.5" />
+                Lokasi Tidak Diperlukan
+              </div>
+            )}
           </div>
 
-        {/* Zone Status */}
-        {distance !== null && (
+        {/* Zone Status — only shown when location is required */}
+        {locationRequired && distance !== null && (
           <div className={`mb-6 p-5 rounded-2xl flex items-center justify-between animate-slide-up shadow-lg ${isWithinZone ? 'bg-green-50 border-2 border-green-300' : 'bg-red-50 border-2 border-red-300'}`}>
             <div className="flex items-center gap-3">
               {isWithinZone ? (
@@ -636,9 +719,19 @@ const PublicForm = () => {
           </div>
         )}
 
-        {/* Interactive Map */}
-        {location && (
-          <Card variant="elevated" className="mb-6 animate-slide-up shadow-xl">
+        {/* Interactive Map — only shown when location is required */}
+        {locationRequired && location && (
+          <Card
+            variant="elevated"
+            className="mb-6 animate-slide-up"
+            style={{
+              background: 'rgba(255, 255, 255, 0.90)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.65)',
+              boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15)',
+            }}
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg flex items-center gap-3 text-gray-900">
@@ -712,10 +805,25 @@ const PublicForm = () => {
           </Card>
         )}
 
-        {/* Form Card */}
-        <Card variant="elevated" className="animate-slide-up shadow-xl" style={{ animationDelay: '100ms' }}>
-          <CardHeader className="border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
+        {/* Form Card — glass style */}
+        <Card
+          variant="elevated"
+          className="animate-slide-up"
+          style={{
+            animationDelay: '100ms',
+            background: 'rgba(255, 255, 255, 0.90)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.65)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255,0,187,0.07)',
+          }}
+        >
+          <CardHeader
+            className="border-b border-gray-100"
+            style={{ borderLeft: '4px solid #FF00BB', paddingLeft: '1.5rem' }}
+          >
             <CardTitle className="text-2xl font-black text-gray-900">Form Pendaftaran Pengunjung</CardTitle>
+            <p className="text-sm text-gray-500 mt-0.5">Isi data dengan lengkap untuk mendapatkan nomor antrian</p>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-8">
@@ -823,6 +931,7 @@ const PublicForm = () => {
                       onChange={handleInputChange}
                       className={`pl-12 text-base h-14 ${errors.service_id ? 'border-red-500 border-2' : 'border-gray-300 border-2 focus:border-[#FF00BB]'}`}
                       disabled={servicesLoading}
+                      autoFocus
                     >
                       <option value="">{servicesLoading ? 'Memuat layanan...' : 'Pilih loket/layanan yang dituju'}</option>
                       {services.map(service => (
@@ -920,19 +1029,19 @@ const PublicForm = () => {
                 size="xl"
                 className="w-full h-16 text-xl font-black shadow-2xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  background: loading || !isWithinZone
+                  background: loading || (locationRequired && !isWithinZone)
                     ? '#9CA3AF'
                     : 'linear-gradient(135deg, #FF00BB 0%, #CC0099 100%)',
                   borderColor: '#FF00BB'
                 }}
-                disabled={loading || !isWithinZone}
+                disabled={loading || (locationRequired && !isWithinZone)}
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-6 h-6 mr-3 animate-spin" />
                     Memproses...
                   </>
-                ) : !isWithinZone ? (
+                ) : (locationRequired && !isWithinZone) ? (
                   'Di luar zona akses'
                 ) : (
                   'AMBIL NOMOR ANTRIAN'

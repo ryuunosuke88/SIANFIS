@@ -20,6 +20,7 @@ class SettingController extends Controller
                 'office_longitude' => Setting::get('office_longitude', '105.294829'),
                 'max_distance' => Setting::get('max_distance', '10000'),
                 'office_name' => Setting::get('office_name', 'Kantor FISIPOL UMA'),
+                'location_required' => Setting::get('location_required', '1'),
             ];
 
             return response()->json([
@@ -232,6 +233,7 @@ class SettingController extends Controller
             'office_longitude' => 'required|numeric|between:-180,180',
             'max_distance' => 'required|integer|min:100|max:50000',
             'office_name' => 'required|string|max:255',
+            'location_required' => 'required|in:0,1',
         ], [
             'office_latitude.required' => 'Latitude kantor wajib diisi',
             'office_latitude.numeric' => 'Latitude harus berupa angka',
@@ -245,6 +247,8 @@ class SettingController extends Controller
             'max_distance.max' => 'Jarak maksimum maksimal 50 km (50000 meter)',
             'office_name.required' => 'Nama kantor wajib diisi',
             'office_name.max' => 'Nama kantor maksimal 255 karakter',
+            'location_required.required' => 'Status wajib lokasi harus dipilih',
+            'location_required.in' => 'Nilai status lokasi tidak valid',
         ]);
 
         if ($validator->fails()) {
@@ -260,6 +264,7 @@ class SettingController extends Controller
             Setting::set('office_longitude', $request->office_longitude);
             Setting::set('max_distance', $request->max_distance);
             Setting::set('office_name', $request->office_name);
+            Setting::set('location_required', $request->location_required);
 
             return response()->json([
                 'success' => true,
@@ -269,6 +274,7 @@ class SettingController extends Controller
                     'office_longitude' => $request->office_longitude,
                     'max_distance' => $request->max_distance,
                     'office_name' => $request->office_name,
+                    'location_required' => $request->location_required,
                 ]
             ]);
         } catch (\Exception $e) {

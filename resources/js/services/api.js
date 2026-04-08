@@ -49,6 +49,9 @@ export const publicApi = {
 
   // Get audio settings (voice announcement)
   getAudioSettings: () => api.get('/settings/audio'),
+
+  // Get display background image URL
+  getDisplayBackground: () => api.get('/display-background'),
 };
 
 // ==================== ADMIN API ====================
@@ -91,6 +94,12 @@ export const adminApi = {
   updateLocationSettings: (data) => api.put('/admin/settings/location', data),
   updateAppSettings: (data) => api.put('/admin/settings/app', data),
   updateAudioSettings: (data) => api.put('/admin/settings/audio', data),
+
+  // Display background
+  uploadBackground: (formData) => api.post('/admin/display-background', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  deleteBackground: () => api.delete('/admin/display-background'),
 };
 
 export default api;

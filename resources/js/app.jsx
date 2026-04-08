@@ -15,6 +15,7 @@ import ServiceManagement from './pages/admin/ServiceManagement';
 import LocationSettings from './pages/admin/LocationSettings';
 import AppSettings from './pages/admin/AppSettings';
 import AudioSettings from './pages/admin/AudioSettings';
+import DisplayBackground from './pages/admin/DisplayBackground';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <Route path="/admin/location-settings" element={<LocationSettings />} />
         <Route path="/admin/app-settings" element={<AppSettings />} />
         <Route path="/admin/audio-settings" element={<AudioSettings />} />
+        <Route path="/admin/display-background" element={<DisplayBackground />} />
       </Routes>
     </BrowserRouter>
   );

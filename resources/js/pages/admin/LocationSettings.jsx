@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminApi, publicApi } from '@/services/api';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@/components/ui';
-import { MapPin, Save, Loader2, ArrowLeft, AlertCircle, CheckCircle, Navigation, Building2, Ruler } from 'lucide-react';
+import { MapPin, Save, Loader2, ArrowLeft, AlertCircle, CheckCircle, Navigation, Building2, Ruler, ToggleLeft, ToggleRight } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Circle, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -35,7 +35,8 @@ const LocationSettings = () => {
     office_latitude: '',
     office_longitude: '',
     max_distance: '',
-    office_name: ''
+    office_name: '',
+    location_required: '1'
   });
 
   const [errors, setErrors] = useState({});
@@ -49,7 +50,10 @@ const LocationSettings = () => {
     try {
       const response = await publicApi.getLocationSettings();
       if (response.data.success) {
-        setFormData(response.data.data);
+        setFormData({
+          ...response.data.data,
+          location_required: response.data.data.location_required ?? '1',
+        });
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
@@ -194,6 +198,45 @@ const LocationSettings = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Location Required Toggle */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    {formData.location_required === '1'
+                      ? <ToggleRight className="w-4 h-4 text-green-500" />
+                      : <ToggleLeft className="w-4 h-4 text-gray-400" />
+                    }
+                    Wajib Verifikasi Lokasi
+                  </Label>
+                  <div
+                    className={`flex items-center gap-4 p-4 rounded-xl border transition-colors cursor-pointer ${
+                      formData.location_required === '1'
+                        ? 'bg-green-500/10 border-green-500/30'
+                        : 'bg-secondary/50 border-border'
+                    }`}
+                    onClick={() =>
+                      setFormData(prev => ({
+                        ...prev,
+                        location_required: prev.location_required === '1' ? '0' : '1',
+                      }))
+                    }
+                  >
+                    {/* Toggle pill */}
+                    <div className={`relative w-14 h-7 rounded-full transition-colors flex-shrink-0 ${formData.location_required === '1' ? 'bg-green-500' : 'bg-gray-400'}`}>
+                      <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-all duration-200 ${formData.location_required === '1' ? 'right-0.5' : 'left-0.5'}`} />
+                    </div>
+                    <div>
+                      <p className={`font-semibold ${formData.location_required === '1' ? 'text-green-400' : 'text-muted-foreground'}`}>
+                        {formData.location_required === '1' ? 'Lokasi Wajib (Aktif)' : 'Lokasi Opsional (Non-aktif)'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {formData.location_required === '1'
+                          ? 'Pengunjung wajib berada di dalam radius kantor untuk mengambil tiket'
+                          : 'Pengunjung dapat mengambil tiket tanpa verifikasi lokasi'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Office Name */}
                 <div className="space-y-2">
                   <Label required className="flex items-center gap-2">

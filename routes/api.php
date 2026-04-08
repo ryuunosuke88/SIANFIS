@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\QueueController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\VideoController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\DisplaySettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,9 @@ Route::get('/ticket/code/{code}', [TicketController::class, 'getByCode']);
 
 // Display (for polling)
 Route::get('/display/current', [DisplayController::class, 'current']);
+
+// Display background (public — used by ticket form on page load)
+Route::get('/display-background', [DisplaySettingController::class, 'show']);
 
 // Video (DEPRECATED - replaced with YouTube Playlist)
 // Route::get('/video', [VideoController::class, 'show']);
@@ -88,6 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
     //     Route::post('/', [VideoController::class, 'store']);
     //     Route::delete('/', [VideoController::class, 'destroy']);
     // });
+
+    // Display Background Management
+    Route::post('/admin/display-background', [DisplaySettingController::class, 'upload']);
+    Route::delete('/admin/display-background', [DisplaySettingController::class, 'destroy']);
 
     // Settings Management
     Route::prefix('admin/settings')->group(function () {
