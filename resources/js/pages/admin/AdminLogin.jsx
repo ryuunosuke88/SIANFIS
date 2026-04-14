@@ -50,7 +50,7 @@ const AdminLogin = () => {
     <div 
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
-        backgroundImage: "url('/assets/BG1.jpg')",
+        backgroundImage: "url('/assets/bgtech.jpg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}

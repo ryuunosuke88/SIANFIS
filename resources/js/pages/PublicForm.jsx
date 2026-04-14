@@ -154,8 +154,10 @@ const PublicForm = () => {
   const watchIdRef = useRef(null);
 
   const [services, setServices] = useState([]);
+  const [counters, setCounters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [countersLoading, setCountersLoading] = useState(false);
   const [problemImage, setProblemImage] = useState(null);
   const [location, setLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
@@ -199,6 +201,7 @@ const PublicForm = () => {
     fakultas: 'Fakultas Ilmu Sosial dan Ilmu Politik',
     alamat: '',
     service_id: '',
+    counter_id: '',
     purpose: '',
     notes: '',
   });
@@ -396,12 +399,44 @@ const PublicForm = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
     }
+
+    // If service changes, fetch counters for that service and reset counter selection
+    if (name === 'service_id') {
+      setFormData(prev => ({ ...prev, counter_id: '' }));
+      if (value) {
+        fetchCountersByService(value);
+      } else {
+        setCounters([]);
+      }
+    }
+  };
+
+  // Fetch counters for a specific service
+  const fetchCountersByService = async (serviceId) => {
+    if (!serviceId) {
+      setCounters([]);
+      return;
+    }
+
+    setCountersLoading(true);
+    try {
+      const response = await publicApi.getCountersByService(serviceId);
+      if (response.data.success) {
+        setCounters(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch counters:', error);
+      setCounters([]);
+    } finally {
+      setCountersLoading(false);
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'Nama wajib diisi';
-    if (!formData.service_id) newErrors.service_id = 'Pilih loket/layanan';
+    if (!formData.service_id) newErrors.service_id = 'Pilih layanan';
+    if (!formData.counter_id) newErrors.counter_id = 'Pilih loket';
     if (!formData.purpose.trim()) newErrors.purpose = 'Keperluan wajib diisi';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -455,78 +490,100 @@ const PublicForm = () => {
         <div
           className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.15) 100%)'
+            backgroundImage: backgroundImage ? `url(${backgroundImage})` : "url('/assets/bgtech.jpg')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         >
-          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle, #FF00BB 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          {/* Dark Overlay - Same as Admin Login */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70" />
+          <div className="absolute inset-0 mesh-gradient opacity-20" />
+
+          {/* Decorative Elements */}
+          <div className="absolute top-0 left-0 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
 
           <Card variant="elevated" className="relative z-10 max-w-lg w-full animate-scale-in">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-center gap-6 mb-8">
+            <CardHeader className="text-center pb-2">
+              <div className="flex items-center justify-center gap-6 mb-6">
                 <img src={appSettings.logo_left} alt="Logo Kiri" className="h-16 object-contain drop-shadow-lg" />
                 <img src={appSettings.logo_right} alt="Logo Kanan" className="h-16 object-contain drop-shadow-lg" />
               </div>
 
-              <h2 className="text-2xl font-bold text-center mb-6" style={{ color: '#FF00BB' }}>Izin Akses Diperlukan</h2>
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary-600 shadow-material-3 mb-6 mx-auto">
+                <MapPin className="w-10 h-10 text-white" />
+              </div>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <span className="flex items-center gap-3 font-medium text-gray-700">
-                    <MapPin className="w-5 h-5" style={{ color: '#FF00BB' }} />
-                    Lokasi
+              <CardTitle className="text-2xl font-bold">Izin Akses Diperlukan</CardTitle>
+              <p className="text-muted-foreground mt-2">
+                Sistem memerlukan akses lokasi untuk verifikasi
+              </p>
+            </CardHeader>
+
+            <CardContent className="pt-4">
+
+              <div className="space-y-4 mb-6">
+                {!permissions.location && (
+                  <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm animate-fade-in flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                    {locationError || 'Izin lokasi ditolak. Silakan izinkan akses lokasi di browser Anda.'}
+                  </div>
+                )}
+
+                {permissions.location && isWithinZone === false && (
+                  <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm">
+                    <p className="font-semibold mb-2">Di luar zona akses!</p>
+                    <p>Anda berada <strong>{formatDistance(distance)}</strong> dari kantor.</p>
+                    <p>Maksimal <strong>{formatDistance(locationSettings.max_distance)}</strong>.</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
+                  <span className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    Status Lokasi
                   </span>
                   {permissions.location === null ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   ) : permissions.location ? (
                     <div className="flex items-center gap-2">
-                      {isTracking && <Radio className="w-4 h-4 text-green-500 animate-pulse" />}
+                      {isTracking && <Radio className="w-3 h-3 text-green-500 animate-pulse" />}
                       <Badge variant="success">Aktif</Badge>
                     </div>
                   ) : (
-                    <Badge variant="error">Ditolak</Badge>
+                    <Badge variant="destructive">Ditolak</Badge>
                   )}
                 </div>
 
                 {distance !== null && (
-                  <div className={`flex items-center justify-between p-4 rounded-xl border ${isWithinZone ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                    <span className="flex items-center gap-3 font-medium text-gray-700">
-                      <Navigation className={`w-5 h-5 ${isWithinZone ? 'text-green-500' : 'text-red-500'}`} />
+                  <div className={`flex items-center justify-between p-4 rounded-xl border ${
+                    isWithinZone
+                      ? 'bg-green-500/10 border-green-500/20 text-green-300'
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    <span className="flex items-center gap-3 text-sm">
+                      <Navigation className="w-4 h-4" />
                       Jarak dari kantor
                     </span>
-                    <span className={`font-bold ${isWithinZone ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className="font-bold text-sm">
                       {formatDistance(distance)}
                     </span>
                   </div>
                 )}
               </div>
 
-              {!permissions.location && (
-                <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-4 text-sm">
-                  {locationError || 'Izin lokasi ditolak. Silakan izinkan akses lokasi di browser Anda.'}
-                </div>
-              )}
-
-              {permissions.location && isWithinZone === false && (
-                <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6 text-sm">
-                  <p className="font-semibold mb-2">Di luar zona akses!</p>
-                  <p>Anda berada <strong>{formatDistance(distance)}</strong> dari kantor.</p>
-                  <p>Maksimal <strong>{formatDistance(locationSettings.max_distance)}</strong>.</p>
-                  <p className="mt-2">Silakan mendekati lokasi kantor untuk mengakses form.</p>
-                </div>
-              )}
-
               {permissions.location && location && (
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-semibold text-gray-700">Peta Lokasi (Real-time):</p>
+                    <p className="text-sm font-semibold">Peta Lokasi Real-Time</p>
                     {isTracking && (
-                      <span className="flex items-center gap-1 text-xs text-green-500">
-                        <Radio className="w-3 h-3 animate-pulse" />
-                        Tracking aktif
-                      </span>
+                      <Badge variant="success" className="text-xs">
+                        <Radio className="w-3 h-3 mr-1 animate-pulse" />
+                        Live
+                      </Badge>
                     )}
                   </div>
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-lg" style={{ height: '300px' }}>
+                  <div className="rounded-xl overflow-hidden border-2 border-border shadow-lg" style={{ height: '280px' }}>
                     <MapContainer
                       center={[locationSettings.office_latitude, locationSettings.office_longitude]}
                       zoom={13}
@@ -542,8 +599,6 @@ const PublicForm = () => {
                           <div className="text-center">
                             <Building2 className="w-4 h-4 mx-auto mb-1" />
                             <strong>{locationSettings.office_name}</strong>
-                            <br />
-                            <span className="text-xs">Pusat Zona Akses</span>
                           </div>
                         </Popup>
                       </Marker>
@@ -571,10 +626,10 @@ const PublicForm = () => {
                     </MapContainer>
                   </div>
                   {locationAccuracy && (
-                    <p className="text-xs text-gray-500 mt-2 text-center">
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
                       Akurasi GPS: ±{Math.round(locationAccuracy)}m
                       {locationAccuracy > 100 && (
-                        <span className="text-amber-600 ml-2">(Akurasi rendah)</span>
+                        <span className="text-amber-500 ml-2">(Rendah)</span>
                       )}
                     </p>
                   )}
@@ -584,17 +639,13 @@ const PublicForm = () => {
               <Button
                 onClick={requestPermissions}
                 size="lg"
-                className="w-full"
-                style={{
-                  background: 'linear-gradient(135deg, #FF00BB 0%, #CC0099 100%)',
-                  borderColor: '#FF00BB'
-                }}
+                className="w-full mt-6"
               >
                 Coba Lagi
               </Button>
 
               {hasAllPermissions && isWithinZone === false && (
-                <p className="text-center text-gray-500 text-sm mt-4">
+                <p className="text-center text-muted-foreground text-sm mt-4">
                   Lokasi Anda diupdate secara real-time. Mendekatlah ke kantor untuk mengakses form.
                 </p>
               )}
@@ -606,155 +657,360 @@ const PublicForm = () => {
   }
 
   return (
-    <>
-      {/* ── Dynamic fullscreen background ── */}
-      {backgroundImage ? (
-        <>
-          {/* Photo layer */}
-          <div
-            className="fixed inset-0 z-0"
-            style={{
-              backgroundImage: `url(${backgroundImage})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
-          {/* Overlay to keep form readable over photo */}
-          <div
-            className="fixed inset-0 z-0"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.87) 0%, rgba(255,0,187,0.28) 100%)',
-            }}
-          />
-        </>
-      ) : (
-        <>
-          {/* Default gradient when no photo is set */}
-          <div
-            className="fixed inset-0 z-0"
-            style={{ background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.13) 100%)' }}
-          />
-          <div
-            className="fixed inset-0 z-0 opacity-5"
-            style={{ backgroundImage: 'radial-gradient(circle, #FF00BB 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-          />
-        </>
-      )}
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : "url('/assets/bgtech.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* Dark Overlay - Same as Admin Login */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/70" />
+      <div className="absolute inset-0 mesh-gradient opacity-20" />
 
-      {/* Main Content */}
-      <div className="min-h-screen p-4 md:p-8 relative overflow-hidden">
-        <div className="relative z-10 max-w-2xl mx-auto">
-          {/* Admin Button - Top Right */}
-          <div className="flex justify-end items-center mb-6 print-hidden">
+      {/* Decorative Elements - Same as Admin Login */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+
+      {/* Scrollable Container for Long Form */}
+      <div className="relative z-10 w-full max-w-2xl max-h-[95vh] overflow-y-auto scrollbar-hide">
+        <div className="py-4">
+          {/* Admin Button - Floating Top Right */}
+          <div className="absolute top-4 right-4 print-hidden z-20">
             <button
               onClick={() => navigate('/admin/login')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl transition-all text-sm backdrop-blur-sm border bg-white/80 hover:bg-white border-gray-200 text-gray-800 shadow-sm hover:shadow"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white shadow-lg"
             >
               <Settings className="w-4 h-4" />
               Admin
             </button>
           </div>
 
-          {/* Header with Logos */}
-          <div className="text-center mb-10 animate-fade-in">
-            <div
-              className="inline-flex items-center justify-center gap-6 mb-6 px-8 py-4 rounded-2xl shadow-lg"
-              style={{
-                background: 'rgba(255,255,255,0.88)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255,255,255,0.6)',
-              }}
-            >
-              <img src={appSettings.logo_left} alt="Logo Kiri" className="h-16 md:h-20 object-contain drop-shadow" />
-              <div className="w-px h-12 bg-gray-200" />
-              <img src={appSettings.logo_right} alt="Logo Kanan" className="h-16 md:h-20 object-contain drop-shadow" />
-            </div>
-            <h1
-              className="text-3xl md:text-4xl font-black mb-2 leading-tight"
-              style={{
-                color: '#1a1a2e',
-                textShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              }}
-            >
-              {appSettings.app_title}
-            </h1>
-            <p className="text-lg text-gray-600 mb-4 font-medium">{appSettings.app_subtitle}</p>
-            {/* Location status indicator */}
-            {locationRequired ? (
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700 border border-green-200">
-                <Radio className="w-3.5 h-3.5 animate-pulse" />
-                Verifikasi Lokasi Aktif
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                <MapPin className="w-3.5 h-3.5" />
-                Lokasi Tidak Diperlukan
-              </div>
-            )}
-          </div>
 
-        {/* Zone Status — only shown when location is required */}
-        {locationRequired && distance !== null && (
-          <div className={`mb-6 p-5 rounded-2xl flex items-center justify-between animate-slide-up shadow-lg ${isWithinZone ? 'bg-green-50 border-2 border-green-300' : 'bg-red-50 border-2 border-red-300'}`}>
-            <div className="flex items-center gap-3">
-              {isWithinZone ? (
-                <>
-                  <CheckCircle className="w-7 h-7 text-green-600" />
-                  <span className="text-green-700 font-bold text-lg">Di dalam zona akses</span>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="w-7 h-7 text-red-600" />
-                  <span className="text-red-700 font-bold text-lg">Di luar zona akses</span>
-                </>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {isTracking && <Radio className="w-5 h-5 text-green-600 animate-pulse" />}
-              <span className={`font-black text-xl ${isWithinZone ? 'text-green-700' : 'text-red-700'}`}>
-                {formatDistance(distance)}
-              </span>
-            </div>
-          </div>
-        )}
+          {/* Main Card - Same Style as Admin Login */}
+          <Card variant="elevated" className="animate-scale-in mb-4">
+            <CardHeader className="text-center pb-2">
+              {/* Logos - Same as Admin Login */}
+              <div className="flex items-center justify-center gap-6 mb-6">
+                <img src={appSettings.logo_left} alt="Logo Kiri" className="h-16 object-contain drop-shadow-lg" />
+                <img src={appSettings.logo_right} alt="Logo Kanan" className="h-16 object-contain drop-shadow-lg" />
+              </div>
 
-        {/* Interactive Map — only shown when location is required */}
-        {locationRequired && location && (
-          <Card
-            variant="elevated"
-            className="mb-6 animate-slide-up"
-            style={{
-              background: 'rgba(255, 255, 255, 0.90)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.65)',
-              boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15)',
-            }}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-lg flex items-center gap-3 text-gray-900">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255, 0, 187, 0.1)' }}>
-                    <MapPin className="w-5 h-5" style={{ color: '#FF00BB' }} />
-                  </div>
-                  Peta Lokasi (Real-time)
-                </h3>
-                <div className="flex items-center gap-3">
-                  {isTracking && (
-                    <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
-                      <Radio className="w-3 h-3 animate-pulse" />
-                      Live
-                    </span>
-                  )}
-                  {locationAccuracy && (
-                    <span className="text-xs text-gray-500 font-medium">
-                      ±{Math.round(locationAccuracy)}m
-                    </span>
+              {/* Icon Badge - Same as Admin Login */}
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary-600 shadow-material-3 mb-6 mx-auto">
+                <FileText className="w-10 h-10 text-white" />
+              </div>
+
+              <CardTitle className="text-2xl font-bold">Form Pendaftaran Pengunjung</CardTitle>
+              <p className="text-muted-foreground mt-2">
+                {appSettings.app_title}
+              </p>
+
+              {/* Location Status Badge */}
+              {locationRequired && (
+                <div className="mt-4">
+                  {distance !== null && (
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold ${
+                      isWithinZone
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                        : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                    }`}>
+                      {isWithinZone ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Di dalam zona ({formatDistance(distance)})</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="w-4 h-4" />
+                          <span>Di luar zona ({formatDistance(distance)})</span>
+                        </>
+                      )}
+                      {isTracking && <Radio className="w-3 h-3 animate-pulse ml-1" />}
+                    </div>
                   )}
                 </div>
+              )}
+            </CardHeader>
+
+            <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* System Info - Compact */}
+              {locationRequired && location && (
+                <div className="bg-muted/30 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <MapPin className="w-3 h-3" />
+                      Lokasi
+                    </span>
+                    <span className="font-mono text-foreground">
+                      {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Calendar className="w-3 h-3" />
+                      Tanggal
+                    </span>
+                    <span className="font-mono text-foreground">{formatDate(currentDateTime)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <Clock className="w-3 h-3" />
+                      Waktu
+                    </span>
+                    <span className="font-mono text-foreground font-bold">{formatTime(currentDateTime)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Form Inputs - Same Style as Admin Login */}
+              {errors.name && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm animate-fade-in flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                  Mohon lengkapi semua field yang wajib diisi
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="name">Nama Lengkap *</Label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <Input
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="Masukkan nama lengkap Anda"
+                    className="pl-12"
+                    required
+                  />
+                </div>
               </div>
-              <div className="rounded-2xl overflow-hidden border-2 border-gray-200 shadow-lg" style={{ height: '280px' }}>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Nomor HP / WhatsApp</Label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="08xxxxxxxxxx"
+                    className="pl-12"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="service_id">Pilih Layanan *</Label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10">
+                    <Briefcase className="w-5 h-5" />
+                  </div>
+                  <Select
+                    id="service_id"
+                    name="service_id"
+                    value={formData.service_id}
+                    onChange={handleInputChange}
+                    className="pl-12"
+                    disabled={servicesLoading}
+                    required
+                    autoFocus
+                  >
+                    <option value="">{servicesLoading ? 'Memuat layanan...' : 'Pilih layanan'}</option>
+                    {services.map(service => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                {errors.service_id && (
+                  <p className="text-sm text-destructive font-semibold flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {errors.service_id}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="counter_id">Pilih Loket *</Label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10">
+                    <IdCard className="w-5 h-5" />
+                  </div>
+                  <Select
+                    id="counter_id"
+                    name="counter_id"
+                    value={formData.counter_id}
+                    onChange={handleInputChange}
+                    className="pl-12"
+                    disabled={!formData.service_id || countersLoading}
+                    required
+                  >
+                    <option value="">
+                      {!formData.service_id
+                        ? 'Pilih layanan terlebih dahulu'
+                        : countersLoading
+                        ? 'Memuat loket...'
+                        : counters.length === 0
+                        ? 'Tidak ada loket tersedia'
+                        : 'Pilih loket'}
+                    </option>
+                    {counters.map(counter => (
+                      <option key={counter.id} value={counter.id}>
+                        {counter.name} {counter.number ? `(Loket ${counter.number})` : ''}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                {errors.counter_id && (
+                  <p className="text-sm text-destructive font-semibold flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    {errors.counter_id}
+                  </p>
+                )}
+                {formData.service_id && counters.length === 0 && !countersLoading && (
+                  <p className="text-xs text-muted-foreground">
+                    Belum ada loket untuk layanan ini
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="purpose">Keperluan *</Label>
+                <Textarea
+                  id="purpose"
+                  name="purpose"
+                  value={formData.purpose}
+                  onChange={handleInputChange}
+                  placeholder="Jelaskan keperluan Anda secara singkat"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="alamat">Alamat (Opsional)</Label>
+                <Textarea
+                  id="alamat"
+                  name="alamat"
+                  value={formData.alamat}
+                  onChange={handleInputChange}
+                  placeholder="Masukkan alamat lengkap"
+                  rows={2}
+                />
+              </div>
+
+              {/* Fakultas - Hidden */}
+              <input type="hidden" name="fakultas" value={formData.fakultas} />
+
+              {/* Upload Section - Compact */}
+              <div className="space-y-2">
+                <Label>Foto Permasalahan (Opsional)</Label>
+                <div className="border-2 border-dashed border-border rounded-xl p-4 bg-muted/20">
+                  {problemImage ? (
+                    <div className="text-center">
+                      <img src={problemImage} alt="Problem" className="w-full max-w-xs h-48 object-contain rounded-lg mx-auto mb-3" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setProblemImage(null)}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Hapus Foto
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => problemImageInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Foto
+                    </Button>
+                  )}
+                  <input
+                    ref={problemImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProblemImageUpload}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button - Same as Admin Login */}
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full mt-6"
+                disabled={loading || (locationRequired && !isWithinZone)}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Memproses...
+                  </>
+                ) : (locationRequired && !isWithinZone) ? (
+                  <>
+                    <AlertTriangle className="w-5 h-5 mr-2" />
+                    Di luar zona akses
+                  </>
+                ) : (
+                  'Ambil Nomor Antrian'
+                )}
+              </Button>
+
+              {/* Map Toggle Button - If location required */}
+              {locationRequired && location && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="lg"
+                  className="w-full"
+                  onClick={() => setAutoFitMap(!autoFitMap)}
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  {isTracking ? 'Tracking Aktif' : 'Lihat Peta'}
+                </Button>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Map Card - Separate Card Below Main Form (if location required) */}
+        {locationRequired && location && (
+          <Card variant="elevated" className="animate-slide-up mt-4" style={{ animationDelay: '200ms' }}>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                Peta Lokasi Real-Time
+                {isTracking && (
+                  <Badge variant="success" className="ml-2">
+                    <Radio className="w-3 h-3 mr-1 animate-pulse" />
+                    Live
+                  </Badge>
+                )}
+              </CardTitle>
+              {locationAccuracy && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Akurasi: ±{Math.round(locationAccuracy)}m
+                </p>
+              )}
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-xl overflow-hidden border-2 border-border shadow-lg" style={{ height: '300px' }}>
                 <MapContainer
                   center={[locationSettings.office_latitude, locationSettings.office_longitude]}
                   zoom={13}
@@ -797,262 +1053,16 @@ const PublicForm = () => {
                 </MapContainer>
               </div>
               {locationAccuracy > 100 && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-700 text-center font-medium">
-                  ⚠️ Akurasi GPS rendah ({Math.round(locationAccuracy)}m). Untuk akurasi lebih baik, pastikan GPS aktif dan Anda berada di area terbuka.
+                <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-200 text-center">
+                  ⚠️ Akurasi GPS rendah ({Math.round(locationAccuracy)}m). Pastikan GPS aktif dan Anda berada di area terbuka.
                 </div>
               )}
             </CardContent>
           </Card>
         )}
-
-        {/* Form Card — glass style */}
-        <Card
-          variant="elevated"
-          className="animate-slide-up"
-          style={{
-            animationDelay: '100ms',
-            background: 'rgba(255, 255, 255, 0.90)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.65)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255,0,187,0.07)',
-          }}
-        >
-          <CardHeader
-            className="border-b border-gray-100"
-            style={{ borderLeft: '4px solid #FF00BB', paddingLeft: '1.5rem' }}
-          >
-            <CardTitle className="text-2xl font-black text-gray-900">Form Pendaftaran Pengunjung</CardTitle>
-            <p className="text-sm text-gray-500 mt-0.5">Isi data dengan lengkap untuk mendapatkan nomor antrian</p>
-          </CardHeader>
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Section: OTOMATIS / SISTEM */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-black text-gray-600 uppercase tracking-wider flex items-center gap-2 pb-3 border-b-2" style={{ borderColor: 'rgba(255, 0, 187, 0.2)' }}>
-                  <Radio className="w-4 h-4" style={{ color: '#FF00BB' }} />
-                  Otomatis / Sistem
-                </h3>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  {/* Koordinat Lokasi */}
-                  <div className="space-y-2">
-                    <Label className="font-bold text-gray-700">Koordinat Lokasi</Label>
-                    <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-5 h-5" style={{ color: '#FF00BB' }} />
-                        {location ? (
-                          <span className="text-sm font-mono text-gray-700 font-semibold">
-                            {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-gray-500">Mendeteksi...</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Tanggal */}
-                  <div className="space-y-2">
-                    <Label className="font-bold text-gray-700">Tanggal Kunjungan</Label>
-                    <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5" style={{ color: '#FF00BB' }} />
-                        <span className="text-sm font-mono font-semibold text-gray-700">{formatDate(currentDateTime)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Jam */}
-                  <div className="space-y-2">
-                    <Label className="font-bold text-gray-700">Jam Kunjungan</Label>
-                    <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-5 h-5" style={{ color: '#FF00BB' }} />
-                        <span className="text-sm font-mono font-black text-gray-900">{formatTime(currentDateTime)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section: INPUT MANUAL */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-black text-gray-600 uppercase tracking-wider flex items-center gap-2 pb-3 border-b-2" style={{ borderColor: 'rgba(255, 0, 187, 0.2)' }}>
-                  <PenLine className="w-4 h-4" style={{ color: '#FF00BB' }} />
-                  Input Manual
-                </h3>
-
-                {/* Name */}
-                <div className="space-y-2">
-                  <Label required className="font-bold text-gray-700 text-base">Nama Lengkap</Label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#FF00BB' }}>
-                      <User className="w-5 h-5" />
-                    </div>
-                    <Input
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Masukkan nama lengkap Anda"
-                      className={`pl-12 text-base h-14 ${errors.name ? 'border-red-500 border-2' : 'border-gray-300 border-2 focus:border-[#FF00BB]'}`}
-                    />
-                  </div>
-                  {errors.name && <p className="text-sm text-red-600 font-semibold">{errors.name}</p>}
-                </div>
-
-                {/* Phone */}
-                <div className="space-y-2">
-                  <Label className="font-bold text-gray-700 text-base">Nomor HP / WhatsApp</Label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#FF00BB' }}>
-                      <Phone className="w-5 h-5" />
-                    </div>
-                    <Input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="08xxxxxxxxxx"
-                      className="pl-12 text-base h-14 border-gray-300 border-2 focus:border-[#FF00BB]"
-                    />
-                  </div>
-                </div>
-
-                {/* Pilih Loket / Service */}
-                <div className="space-y-2">
-                  <Label required className="font-bold text-gray-700 text-base">Pilih Loket / Layanan</Label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 z-10" style={{ color: '#FF00BB' }}>
-                      <Briefcase className="w-5 h-5" />
-                    </div>
-                    <Select
-                      name="service_id"
-                      value={formData.service_id}
-                      onChange={handleInputChange}
-                      className={`pl-12 text-base h-14 ${errors.service_id ? 'border-red-500 border-2' : 'border-gray-300 border-2 focus:border-[#FF00BB]'}`}
-                      disabled={servicesLoading}
-                      autoFocus
-                    >
-                      <option value="">{servicesLoading ? 'Memuat layanan...' : 'Pilih loket/layanan yang dituju'}</option>
-                      {services.map(service => (
-                        <option key={service.id} value={service.id}>
-                          {service.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  {errors.service_id && <p className="text-sm text-red-600 font-semibold">{errors.service_id}</p>}
-                  <p className="text-sm text-gray-500">Pilih loket/layanan sesuai keperluan Anda</p>
-                </div>
-
-                {/* Purpose */}
-                <div className="space-y-2">
-                  <Label required className="font-bold text-gray-700 text-base">Keperluan</Label>
-                  <Textarea
-                    name="purpose"
-                    value={formData.purpose}
-                    onChange={handleInputChange}
-                    placeholder="Jelaskan keperluan Anda secara singkat"
-                    className={`text-base ${errors.purpose ? 'border-red-500 border-2' : 'border-gray-300 border-2 focus:border-[#FF00BB]'}`}
-                    rows={4}
-                  />
-                  {errors.purpose && <p className="text-sm text-red-600 font-semibold">{errors.purpose}</p>}
-                </div>
-
-                {/* Alamat */}
-                <div className="space-y-2">
-                  <Label className="font-bold text-gray-700 text-base">Alamat (Opsional)</Label>
-                  <Textarea
-                    name="alamat"
-                    value={formData.alamat}
-                    onChange={handleInputChange}
-                    placeholder="Masukkan alamat lengkap"
-                    rows={2}
-                    className="text-base border-gray-300 border-2 focus:border-[#FF00BB]"
-                  />
-                </div>
-
-                {/* Fakultas - Hidden/Readonly */}
-                <input type="hidden" name="fakultas" value={formData.fakultas} />
-              </div>
-
-              {/* Section: UPLOAD (OPSIONAL) */}
-              <div className="space-y-5">
-                <h3 className="text-sm font-black text-gray-600 uppercase tracking-wider flex items-center gap-2 pb-3 border-b-2" style={{ borderColor: 'rgba(255, 0, 187, 0.2)' }}>
-                  <Upload className="w-4 h-4" style={{ color: '#FF00BB' }} />
-                  Upload Permasalahan (Opsional)
-                </h3>
-
-                <div className="space-y-2">
-                  <Label className="font-bold text-gray-700">Foto Permasalahan</Label>
-                  <p className="text-sm text-gray-500">Upload foto terkait permasalahan Anda (tidak wajib)</p>
-                  <div className="border-2 border-dashed rounded-xl p-6 bg-gray-50" style={{ borderColor: 'rgba(255, 0, 187, 0.3)' }}>
-                    {problemImage ? (
-                      <div className="text-center">
-                        <img src={problemImage} alt="Problem" className="w-full max-w-md h-64 object-contain rounded-xl mx-auto mb-4 shadow-lg" />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setProblemImage(null)}
-                          className="border-2 border-gray-300"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Hapus Foto
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full h-14 text-base font-semibold border-2"
-                        style={{ borderColor: '#FF00BB', color: '#FF00BB' }}
-                        onClick={() => problemImageInputRef.current?.click()}
-                      >
-                        <Upload className="w-5 h-5 mr-2" />
-                        Upload Foto Permasalahan
-                      </Button>
-                    )}
-                    <input
-                      ref={problemImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleProblemImageUpload}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button - BIG AND TOUCHSCREEN FRIENDLY */}
-              <Button
-                type="submit"
-                size="xl"
-                className="w-full h-16 text-xl font-black shadow-2xl transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  background: loading || (locationRequired && !isWithinZone)
-                    ? '#9CA3AF'
-                    : 'linear-gradient(135deg, #FF00BB 0%, #CC0099 100%)',
-                  borderColor: '#FF00BB'
-                }}
-                disabled={loading || (locationRequired && !isWithinZone)}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                    Memproses...
-                  </>
-                ) : (locationRequired && !isWithinZone) ? (
-                  'Di luar zona akses'
-                ) : (
-                  'AMBIL NOMOR ANTRIAN'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

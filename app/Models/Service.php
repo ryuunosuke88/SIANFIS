@@ -30,11 +30,19 @@ class Service extends Model
     }
 
     /**
-     * Get the counters for the service.
+     * Get the counters for the service (legacy one-to-many).
      */
     public function counters()
     {
         return $this->hasMany(Counter::class);
+    }
+
+    /**
+     * Get all counters that can handle this service (many-to-many).
+     */
+    public function assignedCounters()
+    {
+        return $this->belongsToMany(Counter::class, 'counter_service');
     }
 
     /**

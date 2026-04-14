@@ -23,6 +23,9 @@ use App\Http\Controllers\Admin\DisplaySettingController;
 // Services (for dropdown)
 Route::get('/services', [VisitorController::class, 'getServices']);
 
+// Counters by service (for dropdown)
+Route::get('/services/{serviceId}/counters', [VisitorController::class, 'getCountersByService']);
+
 // Location Settings (public - for form validation)
 Route::get('/settings/location', [SettingController::class, 'getLocationSettings']);
 
@@ -44,6 +47,9 @@ Route::get('/display/current', [DisplayController::class, 'current']);
 
 // Display background (public — used by ticket form on page load)
 Route::get('/display-background', [DisplaySettingController::class, 'show']);
+
+// Display settings (public — for display page)
+Route::get('/display-settings', [DisplaySettingController::class, 'getSettings']);
 
 // Video (DEPRECATED - replaced with YouTube Playlist)
 // Route::get('/video', [VideoController::class, 'show']);
@@ -96,6 +102,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Display Background Management
     Route::post('/admin/display-background', [DisplaySettingController::class, 'upload']);
     Route::delete('/admin/display-background', [DisplaySettingController::class, 'destroy']);
+
+    // Display Settings Management
+    Route::put('/admin/display-settings', [DisplaySettingController::class, 'updateSettings']);
 
     // Settings Management
     Route::prefix('admin/settings')->group(function () {

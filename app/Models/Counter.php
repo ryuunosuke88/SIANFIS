@@ -12,6 +12,7 @@ class Counter extends Model
     protected $fillable = [
         'name',
         'number',
+        'kode_loket',
         'service_id',
         'active',
     ];
@@ -21,11 +22,19 @@ class Counter extends Model
     ];
 
     /**
-     * Get the service that owns the counter.
+     * Get the service that owns the counter (legacy single service).
      */
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    /**
+     * Get all services that this counter can handle (many-to-many).
+     */
+    public function services()
+    {
+        return $this->belongsToMany(Service::class, 'counter_service');
     }
 
     /**

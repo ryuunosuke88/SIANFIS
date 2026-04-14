@@ -26,6 +26,9 @@ export const publicApi = {
   // Get active services
   getServices: () => api.get('/services'),
 
+  // Get counters by service ID
+  getCountersByService: (serviceId) => api.get(`/services/${serviceId}/counters`),
+
   // Register visitor
   registerVisitor: (data) => api.post('/queue/register', data),
 
@@ -52,6 +55,9 @@ export const publicApi = {
 
   // Get display background image URL
   getDisplayBackground: () => api.get('/display-background'),
+
+  // Get display settings (mode, video URL)
+  getDisplaySettings: () => api.get('/display-settings'),
 };
 
 // ==================== ADMIN API ====================
@@ -100,6 +106,9 @@ export const adminApi = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   deleteBackground: () => api.delete('/admin/display-background'),
+
+  // Display settings
+  updateDisplaySettings: (data) => api.put('/admin/display-settings', data),
 };
 
 export default api;

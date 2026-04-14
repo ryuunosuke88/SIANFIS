@@ -30,7 +30,9 @@ const ServiceManagement = () => {
   const [counterForm, setCounterForm] = useState({
     name: '',
     number: '',
+    kode_loket: '',
     service_id: '',
+    service_ids: [],
     active: true,
   });
 
@@ -122,12 +124,14 @@ const ServiceManagement = () => {
       setCounterForm({
         name: counter.name,
         number: counter.number,
+        kode_loket: counter.kode_loket || '',
         service_id: counter.service_id || '',
+        service_ids: counter.services?.map(s => s.id) || [],
         active: counter.active,
       });
     } else {
       setEditingCounter(null);
-      setCounterForm({ name: '', number: '', service_id: '', active: true });
+      setCounterForm({ name: '', number: '', kode_loket: '', service_id: '', service_ids: [], active: true });
     }
     setShowCounterModal(true);
   };
@@ -393,10 +397,30 @@ const ServiceManagement = () => {
                               <span className="font-bold text-accent text-xl">{counter.number}</span>
                             </div>
                             <div>
-                              <p className="font-semibold text-foreground">{counter.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {counter.service?.name || 'Semua Layanan'}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-foreground">{counter.name}</p>
+                                {counter.kode_loket && (
+                                  <Badge variant="outline" className="font-mono text-xs">
+                                    {counter.kode_loket}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {counter.services && counter.services.length > 0 ? (
+                                  counter.services.map(service => (
+                                    <span
+                                      key={service.id}
+                                      className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium"
+                                    >
+                                      {service.prefix}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">
+                                    {counter.service?.name || 'Semua Layanan'}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -530,19 +554,65 @@ const ServiceManagement = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Layanan (Opsional)</Label>
-                <select
-                  value={counterForm.service_id}
-                  onChange={(e) => setCounterForm({ ...counterForm, service_id: e.target.value })}
-                  className="w-full bg-background border-2 border-border rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-4 focus:ring-primary/20 focus:outline-none transition-all"
-                >
-                  <option value="">Semua Layanan</option>
-                  {services.map(service => (
-                    <option key={service.id} value={service.id}>
-                      {service.name}
-                    </option>
-                  ))}
-                </select>
+                <Label required>Kode Loket</Label>
+                <Input
+                  value={counterForm.kode_loket}
+                  onChange={(e) => setCounterForm({ ...counterForm, kode_loket: e.target.value.toUpperCase() })}
+                  placeholder="contoh: LK1, ADM, CS"
+                  maxLength={10}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Kode unik untuk nomor antrian (contoh: LK1-001)
+                </p>
+              </div>
+              <div className="space-y-3">
+                <Label>Layanan (Pilih beberapa layanan)</Label>
+                <div className="space-y-2 max-h-64 overflow-y-auto p-3 rounded-xl border-2 border-border bg-background/50">
+                  {services.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Belum ada layanan tersedia
+                    </p>
+                  ) : (
+                    services.map(service => (
+                      <label
+                        key={service.id}
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors group"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={counterForm.service_ids.includes(service.id)}
+                          onChange={(e) => {
+                            const newServiceIds = e.target.checked
+                              ? [...counterForm.service_ids, service.id]
+                              : counterForm.service_ids.filter(id => id !== service.id);
+                            setCounterForm({ ...counterForm, service_ids: newServiceIds });
+                          }}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-semibold px-2 py-1 rounded-md bg-primary/10 text-primary">
+                              {service.prefix}
+                            </span>
+                            <span className="text-sm font-medium text-foreground">
+                              {service.name}
+                            </span>
+                          </div>
+                          {service.description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {service.description}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {counterForm.service_ids.length === 0
+                    ? 'Tidak ada layanan dipilih - loket akan menangani semua layanan'
+                    : `${counterForm.service_ids.length} layanan dipilih`}
+                </p>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50">
                 <input

@@ -16,6 +16,7 @@ import LocationSettings from './pages/admin/LocationSettings';
 import AppSettings from './pages/admin/AppSettings';
 import AudioSettings from './pages/admin/AudioSettings';
 import DisplayBackground from './pages/admin/DisplayBackground';
+import DisplayControl from './pages/admin/DisplayControl';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
         <Route path="/admin/app-settings" element={<AppSettings />} />
         <Route path="/admin/audio-settings" element={<AudioSettings />} />
         <Route path="/admin/display-background" element={<DisplayBackground />} />
+        <Route path="/admin/display-control" element={<DisplayControl />} />
       </Routes>
     </BrowserRouter>
   );

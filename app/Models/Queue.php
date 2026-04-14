@@ -12,6 +12,7 @@ class Queue extends Model
     protected $fillable = [
         'visitor_id',
         'service_id',
+        'counter_id',
         'queue_number',
         'queue_date',
         'status',
@@ -44,9 +45,17 @@ class Queue extends Model
     }
 
     /**
-     * Get the counter that called this queue.
+     * Get the counter assigned to this queue (via counter_id).
      */
     public function counter()
+    {
+        return $this->belongsTo(Counter::class, 'counter_id');
+    }
+
+    /**
+     * Get the counter that called this queue (via counter_number - legacy).
+     */
+    public function calledCounter()
     {
         return $this->belongsTo(Counter::class, 'counter_number', 'number');
     }
@@ -85,10 +94,18 @@ class Queue extends Model
 
     /**
      * Get formatted queue number with prefix.
+     * Uses counter kode_loket if available, otherwise service prefix.
      */
     public function getFormattedNumberAttribute()
     {
-        $prefix = $this->service->prefix ?? 'A';
+        // Try to get counter's kode_loket first (new system)
+        if ($this->counter_id && $this->counter && $this->counter->kode_loket) {
+            $prefix = $this->counter->kode_loket;
+        } else {
+            // Fallback to service prefix (legacy)
+            $prefix = $this->service->prefix ?? 'A';
+        }
+
         return $prefix . '-' . str_pad($this->queue_number, 3, '0', STR_PAD_LEFT);
     }
 

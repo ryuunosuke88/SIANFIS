@@ -6,7 +6,7 @@ import {
   Users, UserCheck, Clock, CheckCircle,
   LayoutDashboard, FileText, Settings, LogOut,
   RefreshCw, Loader2, Calendar, TrendingUp,
-  ChevronRight, MapPin, Type, Volume2, ImageIcon
+  ChevronRight, MapPin, Type, Volume2, ImageIcon, Monitor
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -165,6 +165,13 @@ const AdminDashboard = () => {
           >
             <ImageIcon className="w-5 h-5" />
             Background
+          </button>
+          <button
+            onClick={() => navigate('/admin/display-control')}
+            className="material-nav-item w-full"
+          >
+            <Monitor className="w-5 h-5" />
+            Display Control
           </button>
         </nav>
 

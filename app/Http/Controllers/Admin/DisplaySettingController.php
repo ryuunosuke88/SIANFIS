@@ -29,6 +29,57 @@ class DisplaySettingController extends Controller
     }
 
     /**
+     * Public: get display settings (mode, video URL, sound).
+     */
+    public function getSettings(): JsonResponse
+    {
+        $setting = DisplaySetting::getInstance();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'display_mode' => $setting->display_mode,
+                'external_video_url' => $setting->external_video_url,
+                'video_sound' => $setting->video_sound,
+            ],
+        ]);
+    }
+
+    /**
+     * Admin: update display settings (mode, video URL, sound).
+     */
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $request->validate([
+            'display_mode' => 'required|in:queue,video',
+            'external_video_url' => 'nullable|string|max:500',
+            'video_sound' => 'required|boolean',
+        ], [
+            'display_mode.required' => 'Display mode wajib dipilih',
+            'display_mode.in' => 'Display mode harus queue atau video',
+            'external_video_url.max' => 'URL video maksimal 500 karakter',
+            'video_sound.required' => 'Video sound setting wajib dipilih',
+            'video_sound.boolean' => 'Video sound harus true atau false',
+        ]);
+
+        $setting = DisplaySetting::getInstance();
+        $setting->display_mode = $request->display_mode;
+        $setting->external_video_url = $request->external_video_url;
+        $setting->video_sound = $request->video_sound;
+        $setting->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Display settings berhasil diperbarui',
+            'data' => [
+                'display_mode' => $setting->display_mode,
+                'external_video_url' => $setting->external_video_url,
+                'video_sound' => $setting->video_sound,
+            ],
+        ]);
+    }
+
+    /**
      * Admin: upload (replace) background image.
      * Accepts jpg/jpeg/png/webp, max 3 MB.
      * Auto-resizes to max 1920px on either dimension using GD.

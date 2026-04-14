@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Services\QueueService;
 use App\Models\Service;
+use App\Models\Counter;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -24,10 +25,33 @@ class VisitorController extends Controller
     public function getServices(): JsonResponse
     {
         $services = Service::active()->get(['id', 'name', 'prefix', 'description']);
-        
+
         return response()->json([
             'success' => true,
             'data' => $services,
+        ]);
+    }
+
+    /**
+     * Get active counters for a specific service.
+     */
+    public function getCountersByService($serviceId): JsonResponse
+    {
+        // Get counters that are assigned to this service (via pivot table)
+        // OR have this service_id (backward compatibility)
+        $counters = Counter::where('active', true)
+            ->where(function($query) use ($serviceId) {
+                $query->where('service_id', $serviceId)
+                      ->orWhereHas('services', function($q) use ($serviceId) {
+                          $q->where('services.id', $serviceId);
+                      });
+            })
+            ->orderBy('number')
+            ->get(['id', 'name', 'number', 'service_id']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $counters,
         ]);
     }
 
@@ -42,6 +66,7 @@ class VisitorController extends Controller
             'agency' => 'required|string|max:255',
             'alamat' => 'nullable|string|max:500',
             'service_id' => 'required|exists:services,id',
+            'counter_id' => 'required|exists:counters,id',
             'purpose' => 'required|string|max:500',
             'notes' => 'nullable|string|max:1000',
             'photo' => 'nullable|string',

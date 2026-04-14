@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Visitor;
 use App\Models\Queue;
 use App\Models\Service;
+use App\Models\Counter;
 use App\Models\DailyCounter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -36,23 +37,36 @@ class QueueService
             // Get service
             $service = Service::findOrFail($data['service_id']);
 
-            // Generate queue number
-            $queueNumber = $this->generateQueueNumber($service->id);
+            // Get counter if provided
+            $counter = null;
+            $queuePrefix = $service->prefix;
+
+            if (isset($data['counter_id'])) {
+                $counter = Counter::findOrFail($data['counter_id']);
+                // Use counter code if available, otherwise fallback to service prefix
+                $queuePrefix = $counter->kode_loket ?? $service->prefix;
+            }
+
+            // Generate queue number (per counter if counter_id provided, otherwise per service)
+            $queueNumber = isset($data['counter_id'])
+                ? $this->generateQueueNumberByCounter($data['counter_id'])
+                : $this->generateQueueNumber($service->id);
 
             // Generate unique ticket code
-            $ticketCode = $this->generateTicketCode($service->prefix);
+            $ticketCode = $this->generateTicketCode($queuePrefix);
 
             // Create queue
             $queue = Queue::create([
                 'visitor_id' => $visitor->id,
                 'service_id' => $service->id,
+                'counter_id' => $data['counter_id'] ?? null,
                 'queue_number' => $queueNumber,
                 'queue_date' => today(),
                 'status' => 'waiting',
                 'ticket_code' => $ticketCode,
             ]);
 
-            return $queue->load(['visitor', 'service']);
+            return $queue->load(['visitor', 'service', 'counter']);
         });
     }
 
@@ -62,6 +76,15 @@ class QueueService
     public function generateQueueNumber(int $serviceId): int
     {
         $counter = DailyCounter::getTodayCounter($serviceId);
+        return $counter->incrementNumber();
+    }
+
+    /**
+     * Generate next queue number for a counter.
+     */
+    public function generateQueueNumberByCounter(int $counterId): int
+    {
+        $counter = DailyCounter::getTodayCounterByCounter($counterId);
         return $counter->incrementNumber();
     }
 

@@ -117,16 +117,30 @@ class ServiceController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'number' => 'required|integer|min:1',
+            'kode_loket' => 'required|string|max:10|unique:counters,kode_loket',
             'service_id' => 'nullable|exists:services,id',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => 'exists:services,id',
             'active' => 'boolean',
         ]);
 
-        $counter = Counter::create($validated);
+        $counter = Counter::create([
+            'name' => $validated['name'],
+            'number' => $validated['number'],
+            'kode_loket' => $validated['kode_loket'],
+            'service_id' => $validated['service_id'] ?? null,
+            'active' => $validated['active'] ?? true,
+        ]);
+
+        // Sync multiple services if provided
+        if (isset($validated['service_ids']) && is_array($validated['service_ids'])) {
+            $counter->services()->sync($validated['service_ids']);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Loket berhasil dibuat',
-            'data' => $counter,
+            'data' => $counter->load('services'),
         ], 201);
     }
 
@@ -140,16 +154,31 @@ class ServiceController extends Controller
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'number' => 'sometimes|required|integer|min:1',
+            'kode_loket' => 'sometimes|required|string|max:10|unique:counters,kode_loket,' . $id,
             'service_id' => 'nullable|exists:services,id',
+            'service_ids' => 'nullable|array',
+            'service_ids.*' => 'exists:services,id',
             'active' => 'boolean',
         ]);
 
-        $counter->update($validated);
+        // Update basic counter fields
+        $counter->update([
+            'name' => $validated['name'] ?? $counter->name,
+            'number' => $validated['number'] ?? $counter->number,
+            'kode_loket' => $validated['kode_loket'] ?? $counter->kode_loket,
+            'service_id' => $validated['service_id'] ?? $counter->service_id,
+            'active' => $validated['active'] ?? $counter->active,
+        ]);
+
+        // Sync multiple services if provided
+        if (isset($validated['service_ids'])) {
+            $counter->services()->sync($validated['service_ids']);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Loket berhasil diperbarui',
-            'data' => $counter->fresh(),
+            'data' => $counter->fresh()->load('services'),
         ]);
     }
 
@@ -172,7 +201,7 @@ class ServiceController extends Controller
      */
     public function allCounters(): JsonResponse
     {
-        $counters = Counter::with('service')
+        $counters = Counter::with(['service', 'services'])
             ->orderBy('number')
             ->get();
 

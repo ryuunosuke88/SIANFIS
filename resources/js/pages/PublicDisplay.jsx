@@ -15,6 +15,11 @@ const PublicDisplay = () => {
   const [youtubePlaylistUrl, setYoutubePlaylistUrl] = useState(null);
   const [showUnlockScreen, setShowUnlockScreen] = useState(true);
 
+  // Display mode settings
+  const [displayMode, setDisplayMode] = useState('queue');
+  const [externalVideoUrl, setExternalVideoUrl] = useState(null);
+  const [videoSound, setVideoSound] = useState(false);
+
   const lastQueueId = useRef(null);
   const pollingIntervalRef = useRef(null);
   const speechInitialized = useRef(false);
@@ -67,6 +72,20 @@ const PublicDisplay = () => {
     }
   };
 
+  const fetchDisplaySettings = async () => {
+    try {
+      const response = await publicApi.getDisplaySettings();
+      if (response.data.success) {
+        setDisplayMode(response.data.data.display_mode);
+        setExternalVideoUrl(response.data.data.external_video_url);
+        setVideoSound(response.data.data.video_sound || false);
+        console.log('[Display] Display mode:', response.data.data.display_mode, 'Sound:', response.data.data.video_sound);
+      }
+    } catch (err) {
+      console.error('[Display] Failed to fetch display settings:', err);
+    }
+  };
+
   const fetchDisplayData = async () => {
     try {
       setError(null);
@@ -101,9 +120,11 @@ const PublicDisplay = () => {
     console.log('[Display] Starting display page...');
 
     fetchAppSettings();
+    fetchDisplaySettings();
     fetchDisplayData();
 
     pollingIntervalRef.current = setInterval(() => {
+      fetchDisplaySettings();
       fetchDisplayData();
     }, 2000);
 
@@ -137,24 +158,48 @@ const PublicDisplay = () => {
     return match ? match[1] : null;
   };
 
+  const extractVideoId = (url) => {
+    if (!url) return null;
+    // Handle various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/,
+      /youtube\.com\/watch\?.*v=([^&]+)/
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  };
+
   const playlistId = extractPlaylistId(youtubePlaylistUrl);
   const youtubeEmbedUrl = playlistId
     ? `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&mute=1&loop=1&controls=0&modestbranding=1&rel=0&playsinline=1`
+    : null;
+
+  const externalVideoId = extractVideoId(externalVideoUrl);
+  const externalVideoEmbedUrl = externalVideoId
+    ? `https://www.youtube.com/embed/${externalVideoId}?autoplay=1&mute=${videoSound ? '0' : '1'}&loop=1&controls=0&modestbranding=1&rel=0&playsinline=1&playlist=${externalVideoId}`
     : null;
 
   if (loading) {
     return (
       <div
         className="h-screen flex flex-col items-center justify-center gap-6 relative"
-        style={{ background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.12) 100%)' }}
+        style={{
+          backgroundImage: "url('/assets/bgtech.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
       >
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,0,187,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/75 to-black/80" />
         <div className="relative z-10 flex flex-col items-center justify-center gap-6">
           <div className="relative">
-            <div className="w-20 h-20 border-4 rounded-full" style={{ borderColor: 'rgba(255,0,187,0.2)' }} />
+            <div className="w-20 h-20 border-4 rounded-full" style={{ borderColor: 'rgba(255,0,187,0.3)' }} />
             <div className="w-20 h-20 border-4 border-t-transparent rounded-full animate-spin absolute top-0 left-0" style={{ borderColor: FISIPOL_PINK }} />
           </div>
-          <p className="text-gray-600 text-xl font-semibold">Memuat data...</p>
+          <p className="text-white text-xl font-semibold">Memuat data...</p>
         </div>
       </div>
     );
@@ -164,15 +209,20 @@ const PublicDisplay = () => {
     return (
       <div
         className="h-screen flex items-center justify-center p-4 relative"
-        style={{ background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.12) 100%)' }}
+        style={{
+          backgroundImage: "url('/assets/bgtech.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
       >
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,0,187,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/75 to-black/80" />
         <div className="relative z-10 text-center max-w-md">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 mb-6">
-            <WifiOff className="w-12 h-12 text-red-500" />
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-500/20 mb-6 border-2 border-red-500/50">
+            <WifiOff className="w-12 h-12 text-red-400" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Koneksi Gagal</h2>
-          <p className="text-gray-500 mb-8">{error}</p>
+          <h2 className="text-3xl font-bold text-white mb-3">Koneksi Gagal</h2>
+          <p className="text-gray-300 mb-8">{error}</p>
           <button
             onClick={fetchDisplayData}
             className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-white transition-all hover:scale-105 shadow-lg"
@@ -188,20 +238,58 @@ const PublicDisplay = () => {
 
   const { current, stats } = displayData || {};
 
+  // VIDEO MODE: Show fullscreen video only
+  if (displayMode === 'video' && externalVideoEmbedUrl) {
+    return (
+      <div className="h-screen w-screen bg-black relative overflow-hidden">
+        {/* Fullscreen Video */}
+        <iframe
+          src={externalVideoEmbedUrl}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            pointerEvents: 'none',
+            border: 'none',
+          }}
+          allow="autoplay; encrypted-media"
+          title="Idle Video Display"
+        />
+
+        {/* Admin floating buttons (only when logged in) */}
+        {isAdmin && !isFullscreen && (
+          <div className="fixed bottom-6 left-6 z-50 flex gap-3 animate-slide-up">
+            <button
+              onClick={() => navigate('/admin/dashboard')}
+              className="flex items-center gap-2 px-5 py-3 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl hover:bg-black/80 transition-all text-white font-semibold text-sm shadow-2xl"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Dashboard
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-5 py-3 bg-red-500/80 backdrop-blur-md text-white rounded-xl hover:bg-red-600 transition-all font-semibold text-sm shadow-2xl border border-red-400/30"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // QUEUE MODE: Show normal queue display UI
   return (
     <div
-      className="h-screen text-gray-900 relative overflow-hidden flex flex-col"
-      style={{ background: 'linear-gradient(135deg, #ffffff 0%, rgba(255, 0, 187, 0.12) 100%)' }}
+      className="h-screen text-white relative overflow-hidden flex flex-col"
+      style={{
+        backgroundImage: "url('/assets/bgtech.jpg')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
     >
-      {/* Subtle dot pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,0,187,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' }}
-      />
-
-      {/* FISIPOL pink soft blobs */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ background: 'rgba(255, 0, 187, 0.07)' }} />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none" style={{ background: 'rgba(255, 0, 187, 0.07)' }} />
+      {/* Dark overlay for text clarity */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/75 to-black/80 pointer-events-none" />
 
       {/* Audio Unlock Screen */}
       {showUnlockScreen && (
@@ -242,21 +330,24 @@ const PublicDisplay = () => {
 
       <div className="relative z-10 p-4 md:p-6 flex flex-col h-full">
         {/* Header */}
-        <header className="flex justify-between items-center mb-4 animate-fade-in flex-shrink-0">
+        <header className="flex justify-between items-center mb-6 animate-fade-in flex-shrink-0 bg-black/40 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
           <div className="flex items-center gap-4">
-            <img src="/assets/LOGO_UMA.png" alt="Logo" className="h-10 md:h-12 object-contain drop-shadow" />
-            <img src="/assets/unggul.png" alt="Logo" className="h-10 md:h-12 object-contain drop-shadow" />
+            <img src="/assets/LOGO_UMA.png" alt="Logo" className="h-12 md:h-16 object-contain drop-shadow-lg" />
+            <img src="/assets/unggul.png" alt="Logo" className="h-12 md:h-16 object-contain drop-shadow-lg" />
             {/* FISIPOL accent bar */}
-            <div className="hidden md:block h-10 w-1 rounded-full ml-1" style={{ background: FISIPOL_PINK }} />
-            <span className="hidden md:block text-sm font-bold tracking-wider" style={{ color: FISIPOL_PINK }}>
-              FISIPOL UMA
-            </span>
+            <div className="hidden md:block h-12 w-1 rounded-full ml-2" style={{ background: FISIPOL_PINK }} />
+            <div className="hidden md:block">
+              <p className="text-lg font-black tracking-wider" style={{ color: FISIPOL_PINK }}>
+                FISIPOL UMA
+              </p>
+              <p className="text-xs text-white/60 font-medium">Sistem Antrian Digital</p>
+            </div>
           </div>
           <div className="text-right">
-            <p className="text-2xl md:text-3xl font-mono font-black tracking-wider text-gray-800">
+            <p className="text-3xl md:text-4xl font-mono font-black tracking-wider text-white drop-shadow-lg">
               {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </p>
-            <p className="text-gray-500 text-sm md:text-base">
+            <p className="text-white/70 text-sm md:text-base font-medium">
               {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
@@ -266,7 +357,7 @@ const PublicDisplay = () => {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
           {/* Left: Video/YouTube panel */}
           <div className="lg:col-span-2 animate-slide-up min-h-0">
-            <div className="bg-white/70 rounded-2xl h-full flex flex-col justify-center items-center border shadow-xl overflow-hidden relative" style={{ borderColor: 'rgba(255,0,187,0.15)' }}>
+            <div className="bg-black/30 backdrop-blur-md rounded-3xl h-full flex flex-col justify-center items-center border border-white/10 shadow-2xl overflow-hidden relative">
               {youtubeEmbedUrl ? (
                 <iframe
                   src={youtubeEmbedUrl}
@@ -279,16 +370,13 @@ const PublicDisplay = () => {
                   title="YouTube Playlist Background"
                 />
               ) : (
-                <div
-                  className="absolute inset-0 flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, rgba(255,0,187,0.05) 0%, rgba(255,0,187,0.12) 100%)' }}
-                >
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-black/50 to-black/30">
                   <div className="text-center animate-fade-in p-8">
-                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-4" style={{ background: 'rgba(255,0,187,0.08)' }}>
-                      <Video className="w-12 h-12" style={{ color: 'rgba(255,0,187,0.3)' }} />
+                    <div className="inline-flex items-center justify-center w-28 h-28 rounded-full mb-6 bg-white/5 border-2 border-white/10">
+                      <Video className="w-14 h-14 text-white/30" />
                     </div>
-                    <p className="text-lg text-gray-400">Background Display</p>
-                    <p className="text-sm text-gray-300 mt-2">Set YouTube Playlist di pengaturan</p>
+                    <p className="text-2xl text-white/70 font-semibold">Background Display</p>
+                    <p className="text-sm text-white/40 mt-2">Set YouTube Playlist di pengaturan</p>
                   </div>
                 </div>
               )}
@@ -298,95 +386,91 @@ const PublicDisplay = () => {
           {/* Right: Queue info panel */}
           <div className="flex flex-col gap-3 min-h-0">
             {/* Queue number card */}
-            <div
-              className="bg-white rounded-xl p-4 shadow-lg animate-slide-up flex-shrink-0 border"
-              style={{ borderColor: 'rgba(255,0,187,0.15)' }}
-            >
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-gray-700">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,0,187,0.1)' }}>
-                  <MapPin className="w-4 h-4" style={{ color: FISIPOL_PINK }} />
+            <div className="bg-black/40 backdrop-blur-md rounded-3xl p-6 shadow-2xl animate-slide-up flex-shrink-0 border border-white/10">
+              <h3 className="text-base font-bold mb-4 flex items-center gap-3 text-white/90">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${FISIPOL_PINK}20` }}>
+                  <MapPin className="w-5 h-5" style={{ color: FISIPOL_PINK }} />
                 </div>
                 Nomor Antrian Dipanggil
               </h3>
 
               {current ? (
                 <div className="text-center animate-scale-in">
-                  <div className="queue-display relative mb-3">
-                    <div className="absolute inset-0 blur-2xl rounded-full" style={{ background: 'rgba(255,0,187,0.12)' }} />
+                  <div className="queue-display relative mb-4">
+                    <div className="absolute inset-0 blur-3xl rounded-full opacity-50" style={{ background: FISIPOL_PINK }} />
                     <p
-                      className="text-[48px] md:text-[64px] font-black leading-none relative drop-shadow"
-                      style={{ color: FISIPOL_PINK }}
+                      className="text-[72px] md:text-[96px] lg:text-[120px] font-black leading-none relative"
+                      style={{
+                        color: FISIPOL_PINK,
+                        textShadow: `0 0 40px ${FISIPOL_PINK}80, 0 0 80px ${FISIPOL_PINK}40`
+                      }}
                     >
                       {current.queue_number}
                     </p>
                   </div>
 
                   <div
-                    className="rounded-xl px-6 py-3 shadow-lg"
+                    className="rounded-2xl px-8 py-5 shadow-2xl border border-white/20"
                     style={{ background: `linear-gradient(135deg, ${FISIPOL_PINK} 0%, #CC0099 100%)` }}
                   >
-                    <p className="text-sm text-white/80 mb-1 font-medium">SILAKAN MENUJU</p>
-                    <p className="text-2xl md:text-3xl font-black text-white">
+                    <p className="text-sm text-white/90 mb-2 font-bold tracking-wider">SILAKAN MENUJU</p>
+                    <p className="text-4xl md:text-5xl font-black text-white tracking-wide">
                       LOKET {current.counter_number}
                     </p>
                   </div>
 
-                  <p className="mt-3 text-sm text-gray-600 font-medium">
-                    {current.service_name}
-                  </p>
+                  <div className="mt-4 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
+                    <p className="text-base text-white/80 font-semibold">
+                      {current.service_name}
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="text-center animate-fade-in py-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-2" style={{ background: 'rgba(255,0,187,0.06)' }}>
-                    <Clock className="w-8 h-8" style={{ color: 'rgba(255,0,187,0.25)' }} />
+                <div className="text-center animate-fade-in py-8">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 bg-white/5 border-2 border-white/10">
+                    <Clock className="w-10 h-10 text-white/30" />
                   </div>
-                  <p className="text-3xl font-black text-gray-200 mb-2">---</p>
-                  <p className="text-sm text-gray-400">Menunggu panggilan</p>
+                  <p className="text-6xl font-black text-white/20 mb-3">---</p>
+                  <p className="text-base text-white/50 font-medium">Menunggu panggilan</p>
                 </div>
               )}
             </div>
 
             {/* Stats card */}
-            <div
-              className="bg-white rounded-xl p-3 shadow-lg border animate-slide-up flex-shrink-0"
-              style={{ borderColor: 'rgba(255,0,187,0.15)' }}
-            >
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-gray-700">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-gray-500" />
+            <div className="bg-black/40 backdrop-blur-md rounded-3xl p-4 shadow-2xl border border-white/10 animate-slide-up flex-shrink-0">
+              <h3 className="text-base font-bold mb-3 flex items-center gap-3 text-white/90">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-white/70" />
                 </div>
                 Statistik Hari Ini
               </h3>
               <div className="grid grid-cols-4 gap-2">
-                <div className="bg-amber-50 rounded-lg p-2 text-center border border-amber-200">
-                  <p className="text-xl md:text-2xl font-bold text-amber-600">{stats?.waiting || 0}</p>
-                  <p className="text-xs text-gray-500">Menunggu</p>
+                <div className="bg-amber-500/20 backdrop-blur-sm rounded-xl p-3 text-center border border-amber-500/30">
+                  <p className="text-2xl md:text-3xl font-black text-amber-400">{stats?.waiting || 0}</p>
+                  <p className="text-xs text-white/60 font-medium mt-1">Menunggu</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-2 text-center border border-green-200">
-                  <p className="text-xl md:text-2xl font-bold text-green-600">{stats?.done || 0}</p>
-                  <p className="text-xs text-gray-500">Selesai</p>
+                <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-3 text-center border border-green-500/30">
+                  <p className="text-2xl md:text-3xl font-black text-green-400">{stats?.done || 0}</p>
+                  <p className="text-xs text-white/60 font-medium mt-1">Selesai</p>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-2 text-center border border-blue-200">
-                  <p className="text-xl md:text-2xl font-bold text-blue-600">{stats?.called || 0}</p>
-                  <p className="text-xs text-gray-500">Dipanggil</p>
+                <div className="bg-blue-500/20 backdrop-blur-sm rounded-xl p-3 text-center border border-blue-500/30">
+                  <p className="text-2xl md:text-3xl font-black text-blue-400">{stats?.called || 0}</p>
+                  <p className="text-xs text-white/60 font-medium mt-1">Dipanggil</p>
                 </div>
-                <div className="rounded-lg p-2 text-center border" style={{ background: 'rgba(255,0,187,0.05)', borderColor: 'rgba(255,0,187,0.2)' }}>
-                  <p className="text-xl md:text-2xl font-bold" style={{ color: FISIPOL_PINK }}>{stats?.total || 0}</p>
-                  <p className="text-xs text-gray-500">Total</p>
+                <div className="backdrop-blur-sm rounded-xl p-3 text-center border" style={{ background: `${FISIPOL_PINK}20`, borderColor: `${FISIPOL_PINK}40` }}>
+                  <p className="text-2xl md:text-3xl font-black" style={{ color: FISIPOL_PINK }}>{stats?.total || 0}</p>
+                  <p className="text-xs text-white/60 font-medium mt-1">Total</p>
                 </div>
               </div>
             </div>
 
             {/* Controls card */}
-            <div
-              className="bg-white rounded-xl p-3 shadow-lg border animate-slide-up flex-shrink-0"
-              style={{ borderColor: 'rgba(255,0,187,0.15)' }}
-            >
-              <h3 className="text-sm font-semibold mb-2 text-gray-700">Kontrol</h3>
+            <div className="bg-black/40 backdrop-blur-md rounded-3xl p-4 shadow-2xl border border-white/10 animate-slide-up flex-shrink-0">
+              <h3 className="text-base font-bold mb-3 text-white/90">Kontrol</h3>
               <div className="flex gap-2">
                 <button
                   onClick={toggleFullscreen}
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-gray-700 font-medium text-sm w-full justify-center border border-gray-200"
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-white font-semibold text-sm w-full justify-center border border-white/20 backdrop-blur-sm"
                 >
                   {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                   {isFullscreen ? 'Keluar Fullscreen' : 'Fullscreen'}
@@ -397,12 +481,9 @@ const PublicDisplay = () => {
         </div>
 
         {/* Marquee ticker */}
-        <div
-          className="mt-3 rounded-lg py-2 px-4 overflow-hidden border animate-fade-in flex-shrink-0"
-          style={{ background: 'rgba(255,0,187,0.04)', borderColor: 'rgba(255,0,187,0.12)' }}
-        >
+        <div className="mt-4 rounded-2xl py-3 px-6 overflow-hidden border animate-fade-in flex-shrink-0 bg-black/40 backdrop-blur-md shadow-lg" style={{ borderColor: `${FISIPOL_PINK}30` }}>
           <div className="animate-marquee whitespace-nowrap">
-            <span className="text-gray-500 text-sm">
+            <span className="text-white/70 text-base font-medium">
               • Harap menunggu dengan tertib • Nomor antrian akan dipanggil secara berurutan •
               Pastikan Anda berada di area tunggu • Terima kasih atas kesabaran Anda •
               SIANFIS - Sistem Informasi Antrian Fisipol •
@@ -410,24 +491,24 @@ const PublicDisplay = () => {
           </div>
         </div>
 
-        <footer className="mt-2 text-center text-gray-400 text-xs flex-shrink-0">
+        <footer className="mt-3 text-center text-white/40 text-sm flex-shrink-0 font-medium">
           <p>Sistem Antrian Digital © 2026 • SIANFIS - Sistem Informasi Antrian Fisipol</p>
         </footer>
       </div>
 
       {/* Admin floating buttons */}
       {isAdmin && !isFullscreen && (
-        <div className="fixed bottom-4 left-4 z-50 flex gap-2 animate-slide-up">
+        <div className="fixed bottom-6 left-6 z-50 flex gap-3 animate-slide-up">
           <button
             onClick={() => navigate('/admin/dashboard')}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium text-sm shadow-lg"
+            className="flex items-center gap-2 px-5 py-3 bg-black/60 backdrop-blur-md border border-white/20 rounded-xl hover:bg-black/80 transition-all text-white font-semibold text-sm shadow-2xl"
           >
             <ArrowLeft className="w-4 h-4" />
             Dashboard
           </button>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium text-sm shadow-lg"
+            className="flex items-center gap-2 px-5 py-3 bg-red-500/80 backdrop-blur-md text-white rounded-xl hover:bg-red-600 transition-all font-semibold text-sm shadow-2xl border border-red-400/30"
           >
             <LogOut className="w-4 h-4" />
             Logout
